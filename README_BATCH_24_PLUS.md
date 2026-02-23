@@ -48,6 +48,7 @@ We've upgraded the curriculum to reflect modern industry demands.
 | **📝 Practice**      | [`practise_questions/`](./practise_questions/) | **400+ Daily Questions** covering cleaning & analytics.         |
 | **📂 Batch Folder**  | `batches/24/`                                  | Your daily notes, assignments, and class materials.             |
 
+## Dataset Link => https://www.kaggle.com/datasets/sirajahmad/acciojob-sql-dataset
 ---
 
 ## 🚀 Quick Start Guide
