@@ -1,0 +1,6 @@
+warehouse_id,name,location_city,region,capacity_sqft,manager_name
+1,Warehouse South Andrew,South Carol,South,20663.0,Jeremy Miller
+2,Warehouse Hermanmouth,Port Rodney,West,22719.0,Carol Garcia
+3,Warehouse Kennethhaven,,South,31488.0,Nathaniel Stokes
+4,Warehouse Nicholasport,Millerland,North,47113.0,Stacy Thomas
+5,Warehouse South Pamela,Stephanieberg,South,44395.0,Dr. Kimberly Hartman

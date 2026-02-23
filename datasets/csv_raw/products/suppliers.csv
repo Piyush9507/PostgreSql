@@ -1,0 +1,101 @@
+supplier_id,supplier_name,contact_name,city,email
+6,Nestle India,Gopal Shankar,Warangal,yashvi10@borde.com
+71,Xpressbees Logistics,Aadi Sura,Puri,charrayaan@edwin.org
+35,Raymond Ltd,Leena Sathe,Bengaluru,patiljeevika@ravel.com
+3,Hindustan Unilever,Aarush Deshmukh,Kanpur,owen16@pingle.com
+59,Torrent Pharma,PRANAV SANGHA,Raipur,ayushman06@pandya.net
+64,Mankind Pharma,azaan rout,Chandigarh,parmargaurang@andra-rana.com
+12,DMart India,Triveni Narain,MYSURU,zmurty@konda.org
+49,Wipro Consumer Care,,Patiala,cradhakrishnan@more.org
+39,Peter England,Tanmayi Bail,,kbawa@rege.com
+43,Relaxo Footwears,Faraj Sahota,Raipur,kashyapbrijesh@sha-prasad.net
+20,Lenovo India,Aahana Morar,Guwahati,biswasbarkha@sachar-gera.com
+27,Havells India,Chakradev Karpe,Bhubaneswar,xbhatia@nagi.com
+63,Lupin Ltd,zarna natarajan,Agra,lila46@acharya-sastry.com
+29,Boat Lifestyle,Libni Varma,Lucknow,ekapad15@dash-mahajan.net
+85,Hero Motocorp,Jason Cheema,Bhopal,ekanta08@nori.com
+18,More Retail,Triya Shankar,Srinagar,tanmayi59@kade.com
+30,Noise,Qushi Majumdar,Mysuru,mbuch@shukla-kumer.org
+40,Louis Philippe,Anika Khatri,Guwahati,barkha64@ravel.biz
+11,Reliance Retail,Yutika Om,Srinagar,bhasinwishi@baral-narula.com
+72,Nykaa Retail,Qarin More,Agra,akshaypatil@som.com
+43,Relaxo Footwears,Faraj Sahota,Raipur,kashyapbrijesh@sha-prasad.net
+81,Durian Furniture,Zayyan Raghavan,Patiala,bahlbhanumati@kala.net
+7,Adani Wilmar,Elijah Pandya,,advika18@bumb.com
+73,Myntra Designs,Yamini Raval,Mumbai,vanya82@sane-bera.com
+10,Mother Dairy,Girindra Deol,Erode,veergara@shere-suri.info
+62,Glenmark Pharma,Alexander Dave,Muzaffarpur,battapatrick@tiwari.com
+76,FirstCry,Radha Krishnan,Agartala,abhiramkaran@jani.com
+69,Gati Ltd,Sanaya Pillai,Nashik,memonqushi@talwar-toor.net
+24,Samsung India,Nathaniel Balasubramanian,Raipur,hyohannan@sur.info
+77,Decathlon India,Tejas Bala,Warangal,nilimanarasimhan@kumar-nayak.com
+74,Ajio Retail,Omkaar Palla,Chennai,krishna63@rajagopal.com
+56,,Anvi Mahajan,Salem,sluthra@bhalla-bava.com
+39,Peter England,Tanmayi Bail,,kbawa@rege.com
+37,Van Heusen,Aarnav Randhawa,Erode,nihal13@sarraf.com
+80,Ikea India,Watika Bhatti,Udupi,vrittikhanna@master-chahal.com
+5,Britannia Industries,Urmi Misra,Patiala,saksham32@kota.com
+45,Tanishq Jewellers,Netra Gaba,Agartala,santvivaan@sampath.biz
+13,Big Basket Pvt Ltd,Hredhaan Saini,Panaji,meera77@korpal.com
+61,Biocon Ltd,Waida Amble,Madurai,shukladhriti@wagle-nagar.com
+86,TVS Motors,Nidhi Kakar,Shimla,pranav83@chopra.com
+52,P&G India,Zinal Parmar,,agastyaseshadri@sunder-oza.com
+17,Spencer Retail,,Siliguri,bachittarsavant@lalla-tella.org
+41,Bata India,Vyanjana Sarna,Coimbatore,vedhika67@mishra.biz
+46,Titan Company,Sachi Baral,Dhanbad,anmolbatra@devi.com
+82,Nilkamal Ltd,ekani kapur,Dhanbad,bishakha72@tandon.com
+34,Nike India,Vrishti Ghosh,Kolkata,abdulswamy@dubey.net
+1,Tata Consumer Products,Jeevika Deo,Mumbai,pradhananita@manne.com
+89,Tata Motors,Tejas Pall,Ludhiana,yadavekanta@verma.com
+91,Honda Cars India,Raghav Sankaran,Indore,regezehaan@sengupta.com
+9,Amul Dairy,Manthan Warrior,Haridwar,virkjason@sundaram-merchant.com
+83,Paragon Footwear,Michael D’Alia,Ahmedabad,echandran@malhotra.biz
+14,Flipkart India,Lopa Peri,VADODARA,darshjohal@mann.net
+25,Whirlpool India,Matthew Zachariah,Mysuru,upmagade@bandi.com
+88,,Dakshesh Kohli,Siliguri,nakshahuja@babu.com
+21,Dell Technologies,Janani Ghosh,Coimbatore,vnarula@parikh.com
+50,Loreal India,Aishani Narasimhan,Bhopal,dalajachandran@barad.com
+33,ADIDAS INDIA,Pallavi Borah,Imphal,yastiaurora@naik.com
+75,Zivame,Aradhana Soman,Vadodara,narasimhanqarin@mani.org
+57,Sun Pharma,Victor Upadhyay,Nagpur,manan37@edwin.com
+70,Safe Express,Fiyaz Brahmbhatt,Surat,charitamurthy@majumdar.net
+78,Urban Ladder,Shaurya Pillai,Ranchi,hsharma@bala.com
+90,Royal Enfield,Widisha Dixit,Bhopal,fiyaz08@shah-pandey.com
+67,Ecom Express,Daksh Devi,Warangal,usunder@baria-pillay.com
+28,Philips India,Ranbir Kadakia,Noida,dayamai76@bora-borde.net
+53,Colgate Palmolive India,Abha Zacharia,,tsankar@pillai-bhasin.com
+66,Delhivery Ltd,Parth Bhatia,Guwahati,nihalkapadia@banerjee.net
+44,CaratLane,Rishi Raja,Warangal,lucky19@toor-maharaj.com
+82,Nilkamal Ltd,ekani kapur,Dhanbad,bishakha72@tandon.com
+9,Amul Dairy,Manthan Warrior,Haridwar,virkjason@sundaram-merchant.com
+47,,,Jamshedpur,dugaranjali@chokshi.biz
+32,Puma India,pooja mahajan,Dhanbad,ukurian@halder.com
+79,Pepperfry,Upasna Sathe,Siliguri,gabashivansh@tella-thakur.biz
+17,Spencer Retail,,Siliguri,bachittarsavant@lalla-tella.org
+22,HP India,Nitara Buch,Bhubaneswar,somanvedhika@sha.com
+15,Amazon India Pvt Ltd,Gaurang D’Alia,Udaipur,triya80@oak.com
+31,Oneplus India,Daniel Kunda,Nagpur,anshpandit@mukhopadhyay.com
+42,Woodland,Shravya Naik,patiala,abhataneja@hayer.com
+66,Delhivery Ltd,Parth Bhatia,Guwahati,nihalkapadia@banerjee.net
+19,Croma Retail,,Agartala,urvi80@sabharwal-karnik.com
+51,Reckitt Benckiser,Radha Dhar,Kolkata,uchandra@ratta-chaudhari.net
+57,Sun Pharma,Victor Upadhyay,Nagpur,manan37@edwin.com
+26,bajaj electricals,Matthew Vora,Gwalior,victorkaul@solanki-hayer.org
+48,Dabur India,Panini Hegde,,vamakshi04@hans-bumb.com
+84,Relaxo Brands,Rishi Narayanan,Nashik,nazarethyauvani@upadhyay.org
+68,FedEx India,Lajita Lala,Ranchi,noahchawla@datta.com
+54,,Yahvi Agate,Prayagraj,kabir88@dewan.com
+87,Maruti Suzuki,Chandran Patla,Trichy,advaith60@tata.biz
+23,,Aradhana Dubey,pune,calebpadmanabhan@mangat.biz
+16,Metro Cash & Carry,Manan Bala,jaipur,darsh05@johal.net
+65,Blue Dart Express,Lavanya Barman,Puri,bandiupadhriti@ramanathan.com
+60,Dr Reddys Labs,Ekansh Tank,Indore,yahvi19@anand.com
+38,Allen Solly,Alexander Dhingra,Srinagar,padmanabhanyashodhara@golla.com
+36,Arvind Mills,Anita Oza,Indore,max25@mohan-devi.net
+55,Coca Cola India,Maanav Vyas,Srinagar,radha37@bhakta.net
+58,Cipla Ltd,Jagdish Mander,Jodhpur,santrudra@pal.net
+8,Parle Products,Riya Borah,Agra,avenkatesh@manne.com
+4,Godrej Consumer Products,Ucchal Hans,Varanasi,ftella@mukhopadhyay.com
+2,ITC Foods,Sathvik Sandhu,,balandiya@shukla.com
+72,Nykaa Retail,Qarin More,Agra,akshaypatil@som.com
+57,Sun Pharma,Victor Upadhyay,Nagpur,manan37@edwin.com
