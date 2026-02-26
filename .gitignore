@@ -55,6 +55,7 @@ dist/
 
 # Instructor-only local materials
 docs/
+_datasets/
 **/logs
 
 

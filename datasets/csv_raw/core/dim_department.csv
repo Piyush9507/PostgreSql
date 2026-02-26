@@ -1,12 +1,12 @@
 dept_id,dept_name
-5,HR
+6,It
+3,Marketing
 8,Customer Support
-2,Operations
-3,Marketing
-3,Marketing
-6,IT
-1,Sales
-4,Finance
 10,Procurement
+4,Finance
 9,Legal
+2,Operations
+1,Sales
+5,HR
+10,Procurement
 7,Logistics

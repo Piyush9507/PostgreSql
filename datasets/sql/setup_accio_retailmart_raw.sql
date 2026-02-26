@@ -57,45 +57,6 @@ CREATE TABLE IF NOT EXISTS core.dim_expense_category (
 );
 
 
-CREATE SCHEMA IF NOT EXISTS customers;
-
-CREATE TABLE IF NOT EXISTS customers.customers (
-  customer_id TEXT,
-  first_name TEXT,
-  last_name TEXT,
-  email TEXT,
-  phone TEXT,
-  registration_date TEXT
-);
-
-CREATE TABLE IF NOT EXISTS customers.addresses (
-  address_id TEXT,
-  customer_id TEXT,
-  address_line text,
-  city TEXT,
-  state TEXT,
-  pincode TEXT,
-  is_default TEXT
-);
-
-CREATE TABLE IF NOT EXISTS customers.reviews (
-  review_id TEXT,
-  customer_id TEXT,
-  product_id TEXT,
-  rating TEXT,
-  review_text text,
-  review_date TEXT
-);
-
-CREATE TABLE IF NOT EXISTS customers.loyalty_points (
-  loyalty_id TEXT,
-  customer_id TEXT,
-  points_earned TEXT,
-  source TEXT,
-  date_earned TEXT
-);
-
-
 CREATE SCHEMA IF NOT EXISTS stores;
 
 CREATE TABLE IF NOT EXISTS stores.stores (
@@ -161,6 +122,45 @@ CREATE TABLE IF NOT EXISTS products.promotions (
   start_date TEXT,
   end_date TEXT,
   active TEXT
+);
+
+
+CREATE SCHEMA IF NOT EXISTS customers;
+
+CREATE TABLE IF NOT EXISTS customers.customers (
+  customer_id TEXT,
+  first_name TEXT,
+  last_name TEXT,
+  email TEXT,
+  phone TEXT,
+  registration_date TEXT
+);
+
+CREATE TABLE IF NOT EXISTS customers.addresses (
+  address_id TEXT,
+  customer_id TEXT,
+  address_line text,
+  city TEXT,
+  state TEXT,
+  pincode TEXT,
+  is_default TEXT
+);
+
+CREATE TABLE IF NOT EXISTS customers.reviews (
+  review_id TEXT,
+  customer_id TEXT,
+  product_id TEXT,
+  rating TEXT,
+  review_text text,
+  review_date TEXT
+);
+
+CREATE TABLE IF NOT EXISTS customers.loyalty_points (
+  loyalty_id TEXT,
+  customer_id TEXT,
+  points_earned TEXT,
+  source TEXT,
+  date_earned TEXT
 );
 
 
@@ -239,9 +239,9 @@ CREATE SCHEMA IF NOT EXISTS hr;
 CREATE TABLE IF NOT EXISTS hr.attendance (
   attendance_id TEXT,
   employee_id TEXT,
+  attendance_date TEXT,
   check_in TEXT,
-  check_out TEXT,
-  status TEXT
+  check_out TEXT
 );
 
 CREATE TABLE IF NOT EXISTS hr.salary_history (
@@ -478,10 +478,6 @@ CREATE TABLE IF NOT EXISTS audit.record_changes (
 \copy core.dim_brand FROM 'datasets/csv_raw/core/dim_brand.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy core.dim_department FROM 'datasets/csv_raw/core/dim_department.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy core.dim_expense_category FROM 'datasets/csv_raw/core/dim_expense_category.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
-\copy customers.customers FROM 'datasets/csv_raw/customers/customers.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
-\copy customers.addresses FROM 'datasets/csv_raw/customers/addresses.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
-\copy customers.reviews FROM 'datasets/csv_raw/customers/reviews.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
-\copy customers.loyalty_points FROM 'datasets/csv_raw/customers/loyalty_points.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy stores.stores FROM 'datasets/csv_raw/stores/stores.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy stores.employees FROM 'datasets/csv_raw/stores/employees.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy stores.expenses FROM 'datasets/csv_raw/stores/expenses.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
@@ -489,6 +485,10 @@ CREATE TABLE IF NOT EXISTS audit.record_changes (
 \copy products.products FROM 'datasets/csv_raw/products/products.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy products.inventory FROM 'datasets/csv_raw/products/inventory.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy products.promotions FROM 'datasets/csv_raw/products/promotions.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
+\copy customers.customers FROM 'datasets/csv_raw/customers/customers.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
+\copy customers.addresses FROM 'datasets/csv_raw/customers/addresses.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
+\copy customers.reviews FROM 'datasets/csv_raw/customers/reviews.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
+\copy customers.loyalty_points FROM 'datasets/csv_raw/customers/loyalty_points.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy sales.orders FROM 'datasets/csv_raw/sales/orders.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy sales.order_items FROM 'datasets/csv_raw/sales/order_items.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy sales.payments FROM 'datasets/csv_raw/sales/payments.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');

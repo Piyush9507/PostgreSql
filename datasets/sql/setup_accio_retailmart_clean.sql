@@ -23,276 +23,276 @@ CREATE DATABASE accio_retailmart_clean;
 CREATE SCHEMA IF NOT EXISTS core;
 
 CREATE TABLE IF NOT EXISTS core.dim_date (
-  date_key TEXT PRIMARY KEY,
-  day TEXT, month TEXT, year TEXT, quarter TEXT,
-  day_name TEXT, month_name TEXT
+  date_key date PRIMARY KEY,
+  day int, month int, year int, quarter int,
+  day_name varchar(10), month_name varchar(10)
 );
 
 CREATE TABLE IF NOT EXISTS core.dim_region (
-  region_id TEXT PRIMARY KEY,
-  region_name TEXT,
-  country TEXT,
-  state TEXT
+  region_id int PRIMARY KEY,
+  region_name varchar(20),
+  country varchar(50),
+  state varchar(50)
 );
 
 CREATE TABLE IF NOT EXISTS core.dim_category (
-  category_id TEXT PRIMARY KEY,
-  category_name TEXT
+  category_id int PRIMARY KEY,
+  category_name varchar(50)
 );
 
 CREATE TABLE IF NOT EXISTS core.dim_brand (
-  brand_id TEXT PRIMARY KEY,
-  brand_name TEXT,
-  category_id TEXT REFERENCES core.dim_category(category_id)
+  brand_id int PRIMARY KEY,
+  brand_name varchar(100),
+  category_id int REFERENCES core.dim_category(category_id)
 );
 
 CREATE TABLE IF NOT EXISTS core.dim_department (
-  dept_id TEXT PRIMARY KEY,
-  dept_name TEXT
+  dept_id int PRIMARY KEY,
+  dept_name varchar(50)
 );
 
 CREATE TABLE IF NOT EXISTS core.dim_expense_category (
-  exp_cat_id TEXT PRIMARY KEY,
-  category_name TEXT
-);
-
-
-CREATE SCHEMA IF NOT EXISTS customers;
-
-CREATE TABLE IF NOT EXISTS customers.customers (
-  customer_id TEXT PRIMARY KEY,
-  first_name TEXT,
-  last_name TEXT,
-  email TEXT,
-  phone TEXT,
-  registration_date TEXT
-);
-
-CREATE TABLE IF NOT EXISTS customers.addresses (
-  address_id TEXT PRIMARY KEY,
-  customer_id TEXT REFERENCES customers.customers(customer_id),
-  address_line text,
-  city TEXT,
-  state TEXT,
-  pincode TEXT,
-  is_default TEXT
-);
-
-CREATE TABLE IF NOT EXISTS customers.reviews (
-  review_id TEXT PRIMARY KEY,
-  customer_id TEXT REFERENCES customers.customers(customer_id),
-  product_id TEXT,
-  rating TEXT,
-  review_text text,
-  review_date TEXT
-);
-
-CREATE TABLE IF NOT EXISTS customers.loyalty_points (
-  loyalty_id TEXT PRIMARY KEY,
-  customer_id TEXT REFERENCES customers.customers(customer_id),
-  points_earned TEXT,
-  source TEXT,
-  date_earned TEXT
+  exp_cat_id int PRIMARY KEY,
+  category_name varchar(50)
 );
 
 
 CREATE SCHEMA IF NOT EXISTS stores;
 
 CREATE TABLE IF NOT EXISTS stores.stores (
-  store_id TEXT PRIMARY KEY,
-  store_name TEXT,
-  region_id TEXT REFERENCES core.dim_region(region_id),
-  city TEXT,
-  square_ft TEXT,
-  opening_date TEXT
+  store_id int PRIMARY KEY,
+  store_name varchar(100),
+  region_id int REFERENCES core.dim_region(region_id),
+  city varchar(50),
+  square_ft int,
+  opening_date date
 );
 
 CREATE TABLE IF NOT EXISTS stores.employees (
-  employee_id TEXT PRIMARY KEY,
-  store_id TEXT REFERENCES stores.stores(store_id),
-  first_name TEXT,
-  last_name TEXT,
-  email TEXT,
-  role TEXT,
-  dept_id TEXT REFERENCES core.dim_department(dept_id),
-  joining_date TEXT,
-  salary TEXT
+  employee_id int PRIMARY KEY,
+  store_id int REFERENCES stores.stores(store_id),
+  first_name varchar(50),
+  last_name varchar(50),
+  email varchar(100),
+  role varchar(50),
+  dept_id int REFERENCES core.dim_department(dept_id),
+  joining_date date,
+  salary int
 );
 
 CREATE TABLE IF NOT EXISTS stores.expenses (
-  store_expense_id TEXT PRIMARY KEY,
-  store_id TEXT REFERENCES stores.stores(store_id),
-  expense_type TEXT,
-  amount TEXT,
-  expense_date TEXT
+  store_expense_id int PRIMARY KEY,
+  store_id int REFERENCES stores.stores(store_id),
+  expense_type varchar(50),
+  amount numeric(12,2),
+  expense_date date
 );
 
 
 CREATE SCHEMA IF NOT EXISTS products;
 
 CREATE TABLE IF NOT EXISTS products.suppliers (
-  supplier_id TEXT PRIMARY KEY,
-  supplier_name TEXT,
-  contact_name TEXT,
-  city TEXT,
-  email TEXT
+  supplier_id int PRIMARY KEY,
+  supplier_name varchar(100),
+  contact_name varchar(100),
+  city varchar(50),
+  email varchar(100)
 );
 
 CREATE TABLE IF NOT EXISTS products.products (
-  product_id TEXT PRIMARY KEY,
-  product_name TEXT,
-  brand_id TEXT REFERENCES core.dim_brand(brand_id),
-  supplier_id TEXT REFERENCES products.suppliers(supplier_id),
-  price TEXT,
-  cost_price TEXT
+  product_id int PRIMARY KEY,
+  product_name varchar(150),
+  brand_id int REFERENCES core.dim_brand(brand_id),
+  supplier_id int REFERENCES products.suppliers(supplier_id),
+  price numeric(12,2),
+  cost_price numeric(12,2)
 );
 
 CREATE TABLE IF NOT EXISTS products.inventory (
-  store_id TEXT REFERENCES stores.stores(store_id),
-  product_id TEXT REFERENCES products.products(product_id),
-  quantity_on_hand TEXT,
-  reorder_level TEXT,
+  store_id int REFERENCES stores.stores(store_id),
+  product_id int REFERENCES products.products(product_id),
+  quantity_on_hand int,
+  reorder_level int,
   PRIMARY KEY (store_id, product_id)
 );
 
 CREATE TABLE IF NOT EXISTS products.promotions (
-  promo_id TEXT PRIMARY KEY,
-  promo_name TEXT,
-  discount_percent TEXT,
-  start_date TEXT,
-  end_date TEXT,
-  active TEXT
+  promo_id int PRIMARY KEY,
+  promo_name varchar(100),
+  discount_percent int,
+  start_date date,
+  end_date date,
+  active boolean
+);
+
+
+CREATE SCHEMA IF NOT EXISTS customers;
+
+CREATE TABLE IF NOT EXISTS customers.customers (
+  customer_id int PRIMARY KEY,
+  first_name varchar(50),
+  last_name varchar(50),
+  email varchar(100),
+  phone varchar(20),
+  registration_date date
+);
+
+CREATE TABLE IF NOT EXISTS customers.addresses (
+  address_id int PRIMARY KEY,
+  customer_id int REFERENCES customers.customers(customer_id),
+  address_line text,
+  city varchar(50),
+  state varchar(50),
+  pincode varchar(10),
+  is_default boolean
+);
+
+CREATE TABLE IF NOT EXISTS customers.reviews (
+  review_id int PRIMARY KEY,
+  customer_id int REFERENCES customers.customers(customer_id),
+  product_id int REFERENCES products.products(product_id),
+  rating int CHECK (rating BETWEEN 1 AND 5),
+  review_text text,
+  review_date date
+);
+
+CREATE TABLE IF NOT EXISTS customers.loyalty_points (
+  loyalty_id int PRIMARY KEY,
+  customer_id int REFERENCES customers.customers(customer_id),
+  points_earned int,
+  source varchar(50),
+  date_earned date
 );
 
 
 CREATE SCHEMA IF NOT EXISTS sales;
 
 CREATE TABLE IF NOT EXISTS sales.orders (
-  order_id TEXT PRIMARY KEY,
-  cust_id TEXT REFERENCES customers.customers(customer_id),
-  store_id TEXT REFERENCES stores.stores(store_id),
-  order_date TEXT,
-  order_status TEXT,
-  gross_total TEXT,
-  discount_amount TEXT,
-  net_total TEXT
+  order_id int PRIMARY KEY,
+  cust_id int REFERENCES customers.customers(customer_id),
+  store_id int REFERENCES stores.stores(store_id),
+  order_date date,
+  order_status varchar(20),
+  gross_total numeric(12,2),
+  discount_amount numeric(12,2),
+  net_total numeric(12,2)
 );
 
 CREATE TABLE IF NOT EXISTS sales.order_items (
-  order_item_id TEXT PRIMARY KEY,
-  order_id TEXT REFERENCES sales.orders(order_id),
-  prod_id TEXT REFERENCES products.products(product_id),
-  quantity TEXT,
-  unit_price TEXT,
-  gross_amount TEXT,
-  discount_amount TEXT,
-  net_amount TEXT
+  order_item_id int PRIMARY KEY,
+  order_id int REFERENCES sales.orders(order_id),
+  prod_id int REFERENCES products.products(product_id),
+  quantity int,
+  unit_price numeric(12,2),
+  gross_amount numeric(12,2),
+  discount_amount numeric(12,2),
+  net_amount numeric(12,2)
 );
 
 CREATE TABLE IF NOT EXISTS sales.payments (
-  payment_id TEXT PRIMARY KEY,
-  order_id TEXT REFERENCES sales.orders(order_id),
-  payment_date TEXT,
-  payment_mode TEXT,
-  amount TEXT
+  payment_id int PRIMARY KEY,
+  order_id int REFERENCES sales.orders(order_id),
+  payment_date date,
+  payment_mode varchar(30),
+  amount numeric(12,2)
 );
 
 CREATE TABLE IF NOT EXISTS sales.shipments (
-  shipment_id TEXT PRIMARY KEY,
-  order_id TEXT REFERENCES sales.orders(order_id),
-  courier_name TEXT,
-  shipped_date TEXT,
-  delivered_date TEXT,
-  status TEXT
+  shipment_id int PRIMARY KEY,
+  order_id int REFERENCES sales.orders(order_id),
+  courier_name varchar(50),
+  shipped_date date,
+  delivered_date date,
+  status varchar(30)
 );
 
 CREATE TABLE IF NOT EXISTS sales.returns (
-  return_id TEXT PRIMARY KEY,
-  order_id TEXT REFERENCES sales.orders(order_id),
-  prod_id TEXT REFERENCES products.products(product_id),
-  return_date TEXT,
+  return_id int PRIMARY KEY,
+  order_id int REFERENCES sales.orders(order_id),
+  prod_id int REFERENCES products.products(product_id),
+  return_date date,
   reason text,
-  refund_amount TEXT
+  refund_amount numeric(12,2)
 );
 
 
 CREATE SCHEMA IF NOT EXISTS finance;
 
 CREATE TABLE IF NOT EXISTS finance.expenses (
-  expense_id TEXT PRIMARY KEY,
-  expense_date TEXT,
-  exp_cat_id TEXT REFERENCES core.dim_expense_category(exp_cat_id),
-  amount TEXT,
+  expense_id int PRIMARY KEY,
+  expense_date date,
+  exp_cat_id int REFERENCES core.dim_expense_category(exp_cat_id),
+  amount numeric(12,2),
   description text
 );
 
 CREATE TABLE IF NOT EXISTS finance.revenue_summary (
-  summary_id TEXT PRIMARY KEY,
-  summary_date TEXT,
-  total_revenue TEXT,
-  total_orders TEXT,
-  avg_order_value TEXT
+  summary_id int PRIMARY KEY,
+  summary_date date,
+  total_revenue numeric(12,2),
+  total_orders int,
+  avg_order_value numeric(12,2)
 );
 
 
 CREATE SCHEMA IF NOT EXISTS hr;
 
 CREATE TABLE IF NOT EXISTS hr.attendance (
-  attendance_id TEXT PRIMARY KEY,
-  employee_id TEXT REFERENCES stores.employees(employee_id),
-  check_in TEXT,
-  check_out TEXT,
-  status TEXT
+  attendance_id int PRIMARY KEY,
+  employee_id int REFERENCES stores.employees(employee_id),
+  attendance_date date,
+  check_in timestamp,
+  check_out timestamp
 );
 
 CREATE TABLE IF NOT EXISTS hr.salary_history (
-  payment_id TEXT PRIMARY KEY,
-  employee_id TEXT REFERENCES stores.employees(employee_id),
-  amount TEXT,
-  payment_date TEXT,
-  status TEXT
+  payment_id int PRIMARY KEY,
+  employee_id int REFERENCES stores.employees(employee_id),
+  amount numeric(12,2),
+  payment_date date,
+  status varchar(20)
 );
 
 
 CREATE SCHEMA IF NOT EXISTS marketing;
 
 CREATE TABLE IF NOT EXISTS marketing.campaigns (
-  campaign_id TEXT PRIMARY KEY,
-  campaign_name TEXT,
-  start_date TEXT,
-  end_date TEXT,
-  budget TEXT
+  campaign_id int PRIMARY KEY,
+  campaign_name varchar(100),
+  start_date date,
+  end_date date,
+  budget numeric(12,2)
 );
 
 CREATE TABLE IF NOT EXISTS marketing.ads_spend (
-  spend_id TEXT PRIMARY KEY,
-  campaign_id TEXT REFERENCES marketing.campaigns(campaign_id),
-  spend_date TEXT,
-  amount TEXT,
-  platform TEXT
+  spend_id int PRIMARY KEY,
+  campaign_id int REFERENCES marketing.campaigns(campaign_id),
+  spend_date date,
+  amount numeric(12,2),
+  platform varchar(50)
 );
 
 CREATE TABLE IF NOT EXISTS marketing.email_clicks (
-  email_id TEXT PRIMARY KEY,
-  campaign_id TEXT REFERENCES marketing.campaigns(campaign_id),
-  sent_date TEXT,
-  emails_sent TEXT,
-  emails_opened TEXT,
-  emails_clicked TEXT
+  email_id int PRIMARY KEY,
+  campaign_id int REFERENCES marketing.campaigns(campaign_id),
+  sent_date date,
+  emails_sent int,
+  emails_opened int,
+  emails_clicked int
 );
 
 
 CREATE SCHEMA IF NOT EXISTS support;
 
 CREATE TABLE IF NOT EXISTS support.tickets (
-  ticket_id TEXT PRIMARY KEY,
-  customer_id TEXT REFERENCES customers.customers(customer_id),
-  agent_id TEXT REFERENCES stores.employees(employee_id),
-  category TEXT,
-  priority TEXT,
-  status TEXT,
-  created_date TEXT,
-  resolved_date TEXT,
+  ticket_id int PRIMARY KEY,
+  customer_id int REFERENCES customers.customers(customer_id),
+  agent_id int REFERENCES stores.employees(employee_id),
+  category varchar(50),
+  priority varchar(20),
+  status varchar(20),
+  created_date timestamp,
+  resolved_date timestamp,
   subject text
 );
 
@@ -300,51 +300,51 @@ CREATE TABLE IF NOT EXISTS support.tickets (
 CREATE SCHEMA IF NOT EXISTS web_events;
 
 CREATE TABLE IF NOT EXISTS web_events.page_views (
-  view_id TEXT PRIMARY KEY,
-  session_id TEXT,
-  customer_id TEXT REFERENCES customers.customers(customer_id),
-  page_url TEXT,
-  view_timestamp TEXT,
-  device_type TEXT,
-  os TEXT
+  view_id int PRIMARY KEY,
+  session_id varchar(50),
+  customer_id int REFERENCES customers.customers(customer_id),
+  page_url varchar(255),
+  view_timestamp timestamp,
+  device_type varchar(20),
+  os varchar(20)
 );
 
 CREATE TABLE IF NOT EXISTS web_events.events (
-  event_id TEXT PRIMARY KEY,
-  view_id TEXT REFERENCES web_events.page_views(view_id),
-  event_type TEXT,
-  element_id TEXT,
-  event_timestamp TEXT
+  event_id int PRIMARY KEY,
+  view_id int REFERENCES web_events.page_views(view_id),
+  event_type varchar(50),
+  element_id varchar(50),
+  event_timestamp timestamp
 );
 
 
 CREATE SCHEMA IF NOT EXISTS supply_chain;
 
 CREATE TABLE IF NOT EXISTS supply_chain.warehouses (
-  warehouse_id TEXT PRIMARY KEY,
-  name TEXT,
-  location_city TEXT,
-  region TEXT,
-  capacity_sqft TEXT,
-  manager_name TEXT
+  warehouse_id int PRIMARY KEY,
+  name varchar(100),
+  location_city varchar(50),
+  region varchar(20),
+  capacity_sqft int,
+  manager_name varchar(50)
 );
 
 CREATE TABLE IF NOT EXISTS supply_chain.shipments (
-  shipment_id TEXT PRIMARY KEY,
-  supplier_id TEXT REFERENCES products.suppliers(supplier_id),
-  warehouse_id TEXT REFERENCES supply_chain.warehouses(warehouse_id),
-  product_id TEXT REFERENCES products.products(product_id),
-  quantity TEXT,
-  shipped_date TEXT,
-  arrival_date TEXT,
-  status TEXT
+  shipment_id int PRIMARY KEY,
+  supplier_id int REFERENCES products.suppliers(supplier_id),
+  warehouse_id int REFERENCES supply_chain.warehouses(warehouse_id),
+  product_id int REFERENCES products.products(product_id),
+  quantity int,
+  shipped_date date,
+  arrival_date date,
+  status varchar(20)
 );
 
 CREATE TABLE IF NOT EXISTS supply_chain.inventory_snapshots (
-  warehouse_id TEXT REFERENCES supply_chain.warehouses(warehouse_id),
-  product_id TEXT REFERENCES products.products(product_id),
-  snapshot_date TEXT,
-  quantity_on_hand TEXT,
+  warehouse_id int REFERENCES supply_chain.warehouses(warehouse_id),
+  product_id int REFERENCES products.products(product_id),
+  snapshot_date date,
+  quantity_on_hand int,
   PRIMARY KEY (warehouse_id, product_id, snapshot_date)
 );
 
@@ -352,124 +352,126 @@ CREATE TABLE IF NOT EXISTS supply_chain.inventory_snapshots (
 CREATE SCHEMA IF NOT EXISTS loyalty;
 
 CREATE TABLE IF NOT EXISTS loyalty.tiers (
-  tier_id TEXT PRIMARY KEY,
-  tier_name TEXT,
-  min_points TEXT,
-  max_points TEXT,
+  tier_id int PRIMARY KEY,
+  tier_name varchar(20),
+  min_points int,
+  max_points int,
   benefits text
 );
 
 CREATE TABLE IF NOT EXISTS loyalty.members (
-  customer_id TEXT PRIMARY KEY REFERENCES customers.customers(customer_id),
-  tier_id TEXT REFERENCES loyalty.tiers(tier_id),
-  points_balance TEXT,
-  join_date TEXT
+  customer_id int PRIMARY KEY REFERENCES customers.customers(customer_id),
+  tier_id int REFERENCES loyalty.tiers(tier_id),
+  points_balance int,
+  join_date date
 );
 
 CREATE TABLE IF NOT EXISTS loyalty.redemptions (
-  redemption_id TEXT PRIMARY KEY,
-  customer_id TEXT REFERENCES customers.customers(customer_id),
-  reward_name TEXT,
-  points_redeemed TEXT,
-  redemption_date TEXT
+  redemption_id int PRIMARY KEY,
+  customer_id int REFERENCES customers.customers(customer_id),
+  reward_name varchar(100),
+  points_redeemed int,
+  redemption_date date
 );
 
 
 CREATE SCHEMA IF NOT EXISTS manufacture;
 
 CREATE TABLE IF NOT EXISTS manufacture.production_lines (
-  line_id TEXT PRIMARY KEY,
-  line_name TEXT,
-  capacity_per_hour TEXT,
-  supervisor_name TEXT
+  line_id int PRIMARY KEY,
+  line_name varchar(50),
+  capacity_per_hour int,
+  supervisor_name varchar(50)
 );
 
 CREATE TABLE IF NOT EXISTS manufacture.work_orders (
-  work_order_id TEXT PRIMARY KEY,
-  product_id TEXT REFERENCES products.products(product_id),
-  line_id TEXT REFERENCES manufacture.production_lines(line_id),
-  start_timestamp TEXT,
-  end_timestamp TEXT,
-  quantity_produced TEXT,
-  rejected_quantity TEXT,
-  status TEXT
+  work_order_id int PRIMARY KEY,
+  product_id int REFERENCES products.products(product_id),
+  line_id int REFERENCES manufacture.production_lines(line_id),
+  start_timestamp timestamp,
+  end_timestamp timestamp,
+  quantity_produced int,
+  rejected_quantity int,
+  status varchar(20)
 );
 
 
 CREATE SCHEMA IF NOT EXISTS payroll;
 
 CREATE TABLE IF NOT EXISTS payroll.tax_brackets (
-  min_salary TEXT,
-  max_salary TEXT,
-  tax_rate TEXT
+  min_salary numeric(12,2),
+  max_salary numeric(12,2),
+  tax_rate numeric(4,2)
 );
 
 CREATE TABLE IF NOT EXISTS payroll.pay_slips (
-  pay_slip_id TEXT PRIMARY KEY,
-  employee_id TEXT REFERENCES stores.employees(employee_id),
-  salary_month TEXT,
-  salary_year TEXT,
-  basic_salary TEXT,
-  hra TEXT,
-  other_allowances TEXT,
-  pf TEXT,
-  professional_tax TEXT,
-  income_tax TEXT,
-  gross_salary TEXT,
-  net_salary TEXT,
-  payment_date TEXT
+  pay_slip_id int PRIMARY KEY,
+  employee_id int REFERENCES stores.employees(employee_id),
+  salary_month varchar(20),
+  salary_year int,
+  basic_salary numeric(12,2),
+  hra numeric(12,2),
+  other_allowances numeric(12,2),
+  pf numeric(12,2),
+  professional_tax numeric(12,2),
+  income_tax numeric(12,2),
+  gross_salary numeric(12,2),
+  net_salary numeric(12,2),
+  payment_date date
 );
 
 
 CREATE SCHEMA IF NOT EXISTS call_center;
 
 CREATE TABLE IF NOT EXISTS call_center.calls (
-  call_id TEXT PRIMARY KEY,
-  customer_id TEXT REFERENCES customers.customers(customer_id),
-  agent_id TEXT REFERENCES stores.employees(employee_id),
-  call_start_time TEXT,
-  call_duration_seconds TEXT,
-  call_reason TEXT,
-  status TEXT
+  call_id int PRIMARY KEY,
+  customer_id int REFERENCES customers.customers(customer_id),
+  agent_id int REFERENCES stores.employees(employee_id),
+  call_start_time timestamp,
+  call_duration_seconds int,
+  call_reason varchar(50),
+  status varchar(20)
 );
 
 CREATE TABLE IF NOT EXISTS call_center.transcripts (
-  transcript_id TEXT PRIMARY KEY,
-  call_id TEXT REFERENCES call_center.calls(call_id),
+  transcript_id int PRIMARY KEY,
+  call_id int REFERENCES call_center.calls(call_id),
   transcript_text text,
-  sentiment_score TEXT
+  sentiment_score numeric(4,2)
 );
 
 
 CREATE SCHEMA IF NOT EXISTS audit;
 
 CREATE TABLE IF NOT EXISTS audit.application_logs (
-  log_id TEXT PRIMARY KEY, TEXT TEXT,
-  service_name TEXT,
-  level TEXT,
+  log_id int PRIMARY KEY,
+  timestamp timestamp,
+  service_name varchar(50),
+  level varchar(10),
   message text,
-  trace_id TEXT
+  trace_id varchar(50)
 );
 
 CREATE TABLE IF NOT EXISTS audit.api_requests (
-  request_id text, TEXT TEXT,
-  endpoint TEXT,
-  method TEXT,
-  status_code TEXT,
-  response_time_ms TEXT,
+  request_id text,
+  timestamp timestamp,
+  endpoint varchar(100),
+  method varchar(10),
+  status_code int,
+  response_time_ms int,
   user_agent text
 );
 
 CREATE TABLE IF NOT EXISTS audit.record_changes (
-  change_id TEXT PRIMARY KEY,
-  table_name TEXT,
-  record_id TEXT,
-  column_name TEXT,
+  change_id int PRIMARY KEY,
+  table_name varchar(50),
+  record_id int,
+  column_name varchar(50),
   old_value text,
   new_value text,
-  changed_by TEXT REFERENCES stores.employees(employee_id),
-  changed_at TEXT,
-  action TEXT
+  changed_by int REFERENCES stores.employees(employee_id),
+  changed_at timestamp,
+  action varchar(10)
 );
 
 
@@ -480,10 +482,6 @@ CREATE TABLE IF NOT EXISTS audit.record_changes (
 \copy core.dim_brand FROM 'datasets/csv_cleaned/core/dim_brand.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy core.dim_department FROM 'datasets/csv_cleaned/core/dim_department.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy core.dim_expense_category FROM 'datasets/csv_cleaned/core/dim_expense_category.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
-\copy customers.customers FROM 'datasets/csv_cleaned/customers/customers.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
-\copy customers.addresses FROM 'datasets/csv_cleaned/customers/addresses.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
-\copy customers.reviews FROM 'datasets/csv_cleaned/customers/reviews.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
-\copy customers.loyalty_points FROM 'datasets/csv_cleaned/customers/loyalty_points.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy stores.stores FROM 'datasets/csv_cleaned/stores/stores.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy stores.employees FROM 'datasets/csv_cleaned/stores/employees.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy stores.expenses FROM 'datasets/csv_cleaned/stores/expenses.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
@@ -491,6 +489,10 @@ CREATE TABLE IF NOT EXISTS audit.record_changes (
 \copy products.products FROM 'datasets/csv_cleaned/products/products.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy products.inventory FROM 'datasets/csv_cleaned/products/inventory.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy products.promotions FROM 'datasets/csv_cleaned/products/promotions.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
+\copy customers.customers FROM 'datasets/csv_cleaned/customers/customers.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
+\copy customers.addresses FROM 'datasets/csv_cleaned/customers/addresses.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
+\copy customers.reviews FROM 'datasets/csv_cleaned/customers/reviews.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
+\copy customers.loyalty_points FROM 'datasets/csv_cleaned/customers/loyalty_points.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy sales.orders FROM 'datasets/csv_cleaned/sales/orders.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy sales.order_items FROM 'datasets/csv_cleaned/sales/order_items.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');
 \copy sales.payments FROM 'datasets/csv_cleaned/sales/payments.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',', QUOTE '"', NULL '');

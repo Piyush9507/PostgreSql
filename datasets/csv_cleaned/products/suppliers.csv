@@ -1,92 +1,92 @@
 supplier_id,supplier_name,contact_name,city,email
-1,Tata Consumer Products,Jeevika Deo,Mumbai,pradhananita@manne.com
-2,ITC Foods,Sathvik Sandhu,Bilaspur,balandiya@shukla.com
-3,Hindustan Unilever,Aarush Deshmukh,Kanpur,owen16@pingle.com
-4,Godrej Consumer Products,Ucchal Hans,Varanasi,ftella@mukhopadhyay.com
-5,Britannia Industries,Urmi Misra,Patiala,saksham32@kota.com
-6,Nestle India,Gopal Shankar,Warangal,yashvi10@borde.com
-7,Adani Wilmar,Elijah Pandya,Shimla,advika18@bumb.com
-8,Parle Products,Riya Borah,Agra,avenkatesh@manne.com
-9,Amul Dairy,Manthan Warrior,Haridwar,virkjason@sundaram-merchant.com
-10,Mother Dairy,Girindra Deol,Erode,veergara@shere-suri.info
-11,Reliance Retail,Yutika Om,Srinagar,bhasinwishi@baral-narula.com
-12,DMart India,Triveni Narain,Mysuru,zmurty@konda.org
-13,Big Basket Pvt Ltd,Hredhaan Saini,Panaji,meera77@korpal.com
-14,Flipkart India,Lopa Peri,Vadodara,darshjohal@mann.net
-15,Amazon India Pvt Ltd,Gaurang D’Alia,Udaipur,triya80@oak.com
-16,Metro Cash & Carry,Manan Bala,Jaipur,darsh05@johal.net
-17,Spencer Retail,Keya Swaminathan,Siliguri,bachittarsavant@lalla-tella.org
-18,More Retail,Triya Shankar,Srinagar,tanmayi59@kade.com
-19,Croma Retail,Chaitaly Som,Agartala,urvi80@sabharwal-karnik.com
-20,Lenovo India,Aahana Morar,Guwahati,biswasbarkha@sachar-gera.com
-21,Dell Technologies,Janani Ghosh,Coimbatore,vnarula@parikh.com
-22,HP India,Nitara Buch,Bhubaneswar,somanvedhika@sha.com
-23,LG Electronics,Aradhana Dubey,Pune,calebpadmanabhan@mangat.biz
-24,Samsung India,Nathaniel Balasubramanian,Raipur,hyohannan@sur.info
-25,Whirlpool India,Matthew Zachariah,Mysuru,upmagade@bandi.com
-26,Bajaj Electricals,Matthew Vora,Gwalior,victorkaul@solanki-hayer.org
-27,Havells India,Chakradev Karpe,Bhubaneswar,xbhatia@nagi.com
-28,Philips India,Ranbir Kadakia,Noida,dayamai76@bora-borde.net
-29,Boat Lifestyle,Libni Varma,Lucknow,ekapad15@dash-mahajan.net
-30,Noise,Qushi Majumdar,Mysuru,mbuch@shukla-kumer.org
-31,OnePlus India,Daniel Kunda,Nagpur,anshpandit@mukhopadhyay.com
-32,Puma India,Pooja Mahajan,Dhanbad,ukurian@halder.com
-33,Adidas India,Pallavi Borah,Imphal,yastiaurora@naik.com
-34,Nike India,Vrishti Ghosh,Kolkata,abdulswamy@dubey.net
-35,Raymond Ltd,Leena Sathe,Bengaluru,patiljeevika@ravel.com
-36,Arvind Mills,Anita Oza,Indore,max25@mohan-devi.net
-37,Van Heusen,Aarnav Randhawa,Erode,nihal13@sarraf.com
-38,Allen Solly,Alexander Dhingra,Srinagar,padmanabhanyashodhara@golla.com
-39,Peter England,Tanmayi Bail,Vadodara,kbawa@rege.com
-40,Louis Philippe,Anika Khatri,Guwahati,barkha64@ravel.biz
-41,Bata India,Vyanjana Sarna,Coimbatore,vedhika67@mishra.biz
-42,Woodland,Shravya Naik,Patiala,abhataneja@hayer.com
-43,Relaxo Footwears,Faraj Sahota,Raipur,kashyapbrijesh@sha-prasad.net
-44,CaratLane,Rishi Raja,Warangal,lucky19@toor-maharaj.com
-45,Tanishq Jewellers,Netra Gaba,Agartala,santvivaan@sampath.biz
-46,Titan Company,Sachi Baral,Dhanbad,anmolbatra@devi.com
-47,Himalaya Wellness,Chatresh Bala,Jamshedpur,dugaranjali@chokshi.biz
-48,Dabur India,Panini Hegde,Lucknow,vamakshi04@hans-bumb.com
-49,Wipro Consumer Care,Irya Chana,Patiala,cradhakrishnan@more.org
-50,Loreal India,Aishani Narasimhan,Bhopal,dalajachandran@barad.com
-51,Reckitt Benckiser,Radha Dhar,Kolkata,uchandra@ratta-chaudhari.net
-52,P&G India,Zinal Parmar,Guwahati,agastyaseshadri@sunder-oza.com
-53,Colgate Palmolive India,Abha Zacharia,Nagpur,tsankar@pillai-bhasin.com
-54,PepsiCo India,Yahvi Agate,Prayagraj,kabir88@dewan.com
-55,Coca Cola India,Maanav Vyas,Srinagar,radha37@bhakta.net
-56,Zydus Wellness,Anvi Mahajan,Salem,sluthra@bhalla-bava.com
-57,Sun Pharma,Victor Upadhyay,Nagpur,manan37@edwin.com
-58,Cipla Ltd,Jagdish Mander,Jodhpur,santrudra@pal.net
-59,Torrent Pharma,Pranav Sangha,Raipur,ayushman06@pandya.net
-60,Dr Reddys Labs,Ekansh Tank,Indore,yahvi19@anand.com
-61,Biocon Ltd,Waida Amble,Madurai,shukladhriti@wagle-nagar.com
-62,Glenmark Pharma,Alexander Dave,Muzaffarpur,battapatrick@tiwari.com
-63,Lupin Ltd,Zarna Natarajan,Agra,lila46@acharya-sastry.com
-64,Mankind Pharma,Azaan Rout,Chandigarh,parmargaurang@andra-rana.com
-65,Blue Dart Express,Lavanya Barman,Puri,bandiupadhriti@ramanathan.com
-66,Delhivery Ltd,Parth Bhatia,Guwahati,nihalkapadia@banerjee.net
-67,Ecom Express,Daksh Devi,Warangal,usunder@baria-pillay.com
-68,FedEx India,Lajita Lala,Ranchi,noahchawla@datta.com
-69,Gati Ltd,Sanaya Pillai,Nashik,memonqushi@talwar-toor.net
-70,Safe Express,Fiyaz Brahmbhatt,Surat,charitamurthy@majumdar.net
-71,Xpressbees Logistics,Aadi Sura,Puri,charrayaan@edwin.org
-72,Nykaa Retail,Qarin More,Agra,akshaypatil@som.com
-73,Myntra Designs,Yamini Raval,Mumbai,vanya82@sane-bera.com
-74,Ajio Retail,Omkaar Palla,Chennai,krishna63@rajagopal.com
-75,Zivame,Aradhana Soman,Vadodara,narasimhanqarin@mani.org
-76,FirstCry,Radha Krishnan,Agartala,abhiramkaran@jani.com
-77,Decathlon India,Tejas Bala,Warangal,nilimanarasimhan@kumar-nayak.com
-78,Urban Ladder,Shaurya Pillai,Ranchi,hsharma@bala.com
-79,Pepperfry,Upasna Sathe,Siliguri,gabashivansh@tella-thakur.biz
-80,Ikea India,Watika Bhatti,Udupi,vrittikhanna@master-chahal.com
-81,Durian Furniture,Zayyan Raghavan,Patiala,bahlbhanumati@kala.net
-82,Nilkamal Ltd,Ekani Kapur,Dhanbad,bishakha72@tandon.com
-83,Paragon Footwear,Michael D’Alia,Ahmedabad,echandran@malhotra.biz
-84,Relaxo Brands,Rishi Narayanan,Nashik,nazarethyauvani@upadhyay.org
-85,Hero Motocorp,Jason Cheema,Bhopal,ekanta08@nori.com
-86,TVS Motors,Nidhi Kakar,Shimla,pranav83@chopra.com
-87,Maruti Suzuki,Chandran Patla,Trichy,advaith60@tata.biz
-88,Mahindra Automotive,Dakshesh Kohli,Siliguri,nakshahuja@babu.com
-89,Tata Motors,Tejas Pall,Ludhiana,yadavekanta@verma.com
-90,Royal Enfield,Widisha Dixit,Bhopal,fiyaz08@shah-pandey.com
-91,Honda Cars India,Raghav Sankaran,Indore,regezehaan@sengupta.com
+1,Tata Consumer Products,Aishani Sengupta,Delhi,utkarsh26@prabhakar.org
+2,ITC Foods,Bachittar Vora,Nashik,aadi24@grewal.org
+3,Hindustan Unilever,Gaurang Shukla,Pune,wsura@singhal.com
+4,Godrej Consumer Products,Indira Char,Surat,aryaneel@dhillon.org
+5,Britannia Industries,Umang Parmar,Rourkela,garima82@thaker.com
+6,Nestle India,Lohit Ratta,Udupi,rbala@borde.com
+7,Adani Wilmar,Rajata Nair,Vadodara,jyotiben@rana-tella.info
+8,Parle Products,Alka Saha,Udaipur,waidachaudhry@tara.com
+9,Amul Dairy,Kashish Soni,Udaipur,imaran86@raja-narain.com
+10,Mother Dairy,Vasatika Palla,Mangalore,dominic05@padmanabhan-bahl.com
+11,Reliance Retail,Veer Agrawal,Bengaluru,sacharwaida@patla.info
+12,DMart India,Ekbal Krishna,Ahmedabad,oliverkonda@sampath.org
+13,Big Basket Pvt Ltd,Gautam Bajwa,Pune,rtailor@yadav.info
+14,Flipkart India,Lila Swamy,Jamshedpur,dasguptavasudha@khanna-chacko.info
+15,Amazon India Pvt Ltd,Isaac Wali,Mangalore,chaitaly41@gokhale-chhabra.com
+16,Metro Cash & Carry,Raagini Mallick,Port Blair,lboase@bose.org
+17,Spencer Retail,Oviya Bakshi,Gandhinagar,gabaradhika@chaudhuri-dasgupta.biz
+18,More Retail,Turvi Majumdar,Madurai,bhaktakamala@ganesh.com
+19,Croma Retail,Eshana Merchant,Udupi,balhaar69@sampath.org
+20,Lenovo India,Balhaar Dua,Salem,christopherpatil@cheema.info
+21,Dell Technologies,Lavanya Dubey,Karimnagar,patiljasmit@sodhi.com
+22,HP India,Gaurav Saha,Salem,rnarula@khanna.com
+23,LG Electronics,Joshua Nadkarni,Chennai,mannvritti@chada.net
+24,Samsung India,Chatura Kant,Pune,vsidhu@karpe-sangha.com
+25,Whirlpool India,Luke Memon,Cuttack,nprabhakar@bahri.com
+26,Bajaj Electricals,Banjeet Mitter,Srinagar,karurvashi@basak-ganguly.info
+27,Havells India,Upma Ramanathan,Varanasi,zsanghvi@pradhan.org
+28,Philips India,Ati Dugar,Kanpur,mayasahota@wason.com
+29,Boat Lifestyle,Gaurangi Mitter,Udaipur,bhavsarbalhaar@dhaliwal.com
+30,Noise,Zaitra Randhawa,Indore,nidrasharma@nath.com
+31,OnePlus India,Aayush Walla,Jaipur,akamdar@ramaswamy-wali.com
+32,Puma India,Akshay Kuruvilla,Varanasi,chadkamala@barman.com
+33,Adidas India,Guneet Rao,Lucknow,maanav91@memon.net
+34,Nike India,Raksha Loyal,Vadodara,ishwar22@gara-manne.com
+35,Raymond Ltd,Dhruv Saini,Bhopal,pallvincent@guha.com
+36,Arvind Mills,Janani Kara,Gwalior,memondev@choudhary-doshi.com
+37,Van Heusen,Mohini Chaudhry,Guwahati,indalikari@chadha.com
+38,Allen Solly,Tejas Srinivasan,Gwalior,wranganathan@sankar.biz
+39,Peter England,George Mitter,Noida,jeremiah48@wali.info
+40,Louis Philippe,Ojas Grewal,Surat,edey@kunda-chana.org
+41,Bata India,Prisha Thaker,Leh,deoljoshua@sarna.net
+42,Woodland,Anya Hari,Vadodara,lajitanarain@rajagopalan.com
+43,Relaxo Footwears,Pahal Chakrabarti,Haridwar,kashishbajaj@varghese.org
+44,CaratLane,Veda Singhal,Ludhiana,ksur@wable-ratti.com
+45,Tanishq Jewellers,Samar Dutta,Jodhpur,ysem@rattan.com
+46,Titan Company,Vedhika Ram,Siliguri,jdhar@patla.com
+47,Himalaya Wellness,Avni Das,Madurai,manthansaini@peri.com
+48,Dabur India,Adya Bhat,Muzaffarpur,ochander@patla.com
+49,Wipro Consumer Care,Krishna Dugar,Dehradun,nakul11@gopal.com
+50,Loreal India,Ayushman Bava,Ahmedabad,lopa90@buch.info
+51,Reckitt Benckiser,Zashil Din,Noida,balaydominic@loke.info
+52,P&G India,Janani Dalal,Chandigarh,aahana68@madan.com
+53,Colgate Palmolive India,Gabriel Swamy,Rourkela,chandran15@kohli.info
+54,PepsiCo India,Victor Chokshi,Jamshedpur,hiralupadhyay@natarajan.com
+55,Coca Cola India,Zayyan Pingle,Cuttack,ramanudarsh@basu.biz
+56,Zydus Wellness,Rachita Prakash,Pune,agastya54@srivastava.biz
+57,Sun Pharma,Hemani Shah,Udaipur,gdhawan@apte-cheema.org
+58,Cipla Ltd,Laksh Keer,Warangal,eta61@sood.com
+59,Torrent Pharma,Ganga Borra,Gaya,meghanakumer@bal.com
+60,Dr Reddys Labs,Yashasvi Dayal,Udupi,sanaya16@handa.com
+61,Biocon Ltd,Praneel Dixit,Kanpur,darikasathe@nagy.net
+62,Glenmark Pharma,Zarna Pant,Salem,lakshghose@saraf-ramesh.org
+63,Lupin Ltd,Raagini Morar,Nashik,tamanna28@kala-varma.com
+64,Mankind Pharma,Zayan Baral,Varanasi,agrawalvasana@bhalla.biz
+65,Blue Dart Express,Jonathan Chaudry,Aizawl,chaudhuriaarini@mangal.com
+66,Delhivery Ltd,Triya Grewal,Bhopal,rhanda@nayar.com
+67,Ecom Express,Zayyan Wable,Prayagraj,gaurika00@dasgupta.com
+68,FedEx India,Ojas Sunder,Mysuru,oviya81@saxena.com
+69,Gati Ltd,Daksh Mishra,Ludhiana,otailor@chad-dugal.net
+70,Safe Express,Urishilla Manda,Erode,farasraj@dewan-wable.net
+71,Xpressbees Logistics,Nihal Grover,Indore,chaitanya90@tara.biz
+72,Nykaa Retail,Wriddhish Bahl,Dehradun,utalwar@ghosh.com
+73,Myntra Designs,Samar Bansal,Leh,imaransinha@saha.net
+74,Ajio Retail,Ryan Walia,Ranchi,cmannan@bava-saxena.net
+75,Zivame,Vrishti Bir,Gwalior,shravya29@srinivas-kota.biz
+76,FirstCry,Oscar Pingle,Srinagar,vbains@gera.biz
+77,Decathlon India,Mugdha Apte,Indore,saumyamistry@baria-mishra.com
+78,Urban Ladder,Ranveer Kannan,Salem,shivanigoda@wali.com
+79,Pepperfry,Yahvi Sangha,New Delhi,ayushdara@karpe-modi.biz
+80,Ikea India,Avi Agrawal,Panaji,matthewaurora@dhar.info
+81,Durian Furniture,Ethan Khanna,Coimbatore,shaqarin@chandran.com
+82,Nilkamal Ltd,Hemal Biswas,Jaipur,itoor@andra.com
+83,Paragon Footwear,Jack Malhotra,Agra,aarnavpingle@jain.com
+84,Relaxo Brands,Yuvraj Naidu,Ahmedabad,eta93@warrior-dhar.net
+85,Hero Motocorp,Eshana Kuruvilla,Mangalore,anita86@chaudhry-kapadia.com
+86,TVS Motors,Lajita Sankar,Noida,mohantyvarenya@jha-mannan.com
+87,Maruti Suzuki,Anay Dasgupta,Meerut,manyadalal@kapur.org
+88,Mahindra Automotive,Nidhi Prasad,Lucknow,zehaanganesan@pillai-sood.net
+89,Tata Motors,Deepa Char,Leh,mkaul@biswas.com
+90,Royal Enfield,Yashvi Ranganathan,Kota,banjeet90@bobal.com
+91,Honda Cars India,Dev Cherian,Kanpur,sanghvifitan@rao.com
