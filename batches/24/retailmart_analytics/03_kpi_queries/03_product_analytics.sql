@@ -84,7 +84,7 @@ SELECT
     COALESCE(pi.stores_stocking, 0) as stores_stocking,
     RANK() OVER (ORDER BY ps.net_revenue DESC) as revenue_rank,
     RANK() OVER (ORDER BY ps.total_units_sold DESC) as units_rank,
-    RANK() OVER (PARTITION BY cat.category_name ORDER BY ps.net_revenue DESC) as category_rank,
+    RANK() OVER (PARTITION BY ps.category ORDER BY ps.net_revenue DESC) as category_rank,
     ROUND((ps.net_revenue / SUM(ps.net_revenue) OVER () * 100)::NUMERIC, 4) as pct_of_total_revenue
 FROM product_sales ps
 LEFT JOIN product_reviews pr ON ps.product_id = pr.product_id

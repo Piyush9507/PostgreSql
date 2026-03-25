@@ -1,83 +1,163 @@
 #!/bin/bash
 # ============================================================================
 # FILE: 05_refresh/export_all_json.sh
-# PROJECT: RetailMart Enterprise Analytics Platform
-# PURPOSE: Export all analytics data to JSON files for dashboard
+# PROJECT: RetailMart V2 Enterprise Analytics Platform
+# PURPOSE: Export all analytics data as JSON files for dashboard consumption
+# AUTHOR: Sayyed Siraj Ali
+# VERSION: 2.0 (RetailMart V2)
+# DATABASE: accio_retailmart_clean (PostgreSQL 18)
+#
+# USAGE:
+#   chmod +x export_all_json.sh
+#   ./export_all_json.sh [output_directory]
+#   ./export_all_json.sh --refresh [output_directory]
+#
+# V2 CHANGES:
+#   - Added exports for: finance, hr, payroll, audit, supply chain, manufacturing
+#   - Added exports for: loyalty, support, call center, web events
+#   - Total: 17 JSON exports (up from 12)
 # ============================================================================
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
+set -e
 
-DB_NAME="${DB_NAME:-retailmart_22}"
-DB_USER="${DB_USER:-postgres}"
-DB_HOST="${DB_HOST:-localhost}"
-DB_PORT="${DB_PORT:-5432}"
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-DATA_DIR="$PROJECT_DIR/06_dashboard/data"
+# Configuration
+DB_NAME="${PGDATABASE:-accio_retailmart_24}"
+DB_USER="${PGUSER:-postgres}"
+OUTPUT_DIR="${2:-${1:-./06_dashboard/data}}"
+LOG_DIR="./05_refresh/logs"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-LOG_FILE="$SCRIPT_DIR/logs/export_log_$TIMESTAMP.txt"
+LOG_FILE="$LOG_DIR/export_log_${TIMESTAMP}.txt"
 
-export_json() {
-    local fn=$1 out=$2 desc=$3
-    echo "  Exporting $desc..."
-    psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -A -c "SELECT $fn();" > "$out" 2>> "$LOG_FILE"
-    [ $? -eq 0 ] && [ -s "$out" ] && echo -e "    ${GREEN}✓${NC} $out" || echo -e "    ${RED}✗${NC} Failed: $desc"
-}
+# Handle --refresh flag
+REFRESH_FIRST=false
+if [ "$1" == "--refresh" ]; then
+    REFRESH_FIRST=true
+    OUTPUT_DIR="${2:-./06_dashboard/data}"
+fi
 
-echo -e "\n${BLUE}=== RETAILMART JSON EXPORT ===${NC}\n"
-mkdir -p "$DATA_DIR"/{sales,customers,products,stores,operations,marketing}
+# Create directories
+mkdir -p "$OUTPUT_DIR"
+mkdir -p "$LOG_DIR"
+
+echo "============================================================================" | tee "$LOG_FILE"
+echo "  RetailMart V2 Analytics — JSON Export" | tee -a "$LOG_FILE"
+echo "  Database: $DB_NAME" | tee -a "$LOG_FILE"
+echo "  Output: $OUTPUT_DIR" | tee -a "$LOG_FILE"
+echo "  Started: $(date)" | tee -a "$LOG_FILE"
+echo "============================================================================" | tee -a "$LOG_FILE"
 
 # Refresh if requested
-[ "$1" = "--refresh" ] && psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT * FROM analytics.fn_refresh_all_analytics();" >> "$LOG_FILE" 2>&1
+if [ "$REFRESH_FIRST" = true ]; then
+    echo "" | tee -a "$LOG_FILE"
+    echo "Refreshing materialized views..." | tee -a "$LOG_FILE"
+    psql -d "$DB_NAME" -U "$DB_USER" -c "SELECT * FROM analytics.fn_refresh_all_analytics();" 2>&1 | tee -a "$LOG_FILE"
+    echo "✓ Refresh complete" | tee -a "$LOG_FILE"
+fi
 
-echo -e "${YELLOW}[1/6] Sales Data${NC}"
-export_json "analytics.get_executive_summary_json" "$DATA_DIR/sales/executive_summary.json" "Executive Summary"
-export_json "analytics.get_monthly_trend_json" "$DATA_DIR/sales/monthly_trend.json" "Monthly Trend"
-export_json "analytics.get_recent_trend_json" "$DATA_DIR/sales/recent_trend.json" "Recent Trend"
-export_json "analytics.get_dayofweek_json" "$DATA_DIR/sales/dayofweek.json" "Day of Week"
-export_json "analytics.get_payment_mode_json" "$DATA_DIR/sales/payment_modes.json" "Payment Modes"
-export_json "analytics.get_quarterly_sales_json" "$DATA_DIR/sales/quarterly_sales.json" "Quarterly"
-export_json "analytics.get_weekend_weekday_json" "$DATA_DIR/sales/weekend_weekday.json" "Weekend vs Weekday"
-export_json "analytics.get_hourly_pattern_json" "$DATA_DIR/sales/hourly_pattern.json" "Hourly Pattern"
+echo "" | tee -a "$LOG_FILE"
+echo "Exporting JSON data..." | tee -a "$LOG_FILE"
+echo "" | tee -a "$LOG_FILE"
 
-echo -e "${YELLOW}[2/6] Customer Data${NC}"
-export_json "analytics.get_top_customers_json" "$DATA_DIR/customers/top_customers.json" "Top Customers"
-export_json "analytics.get_clv_tier_distribution_json" "$DATA_DIR/customers/clv_tiers.json" "CLV Tiers"
-export_json "analytics.get_rfm_segments_json" "$DATA_DIR/customers/rfm_segments.json" "RFM Segments"
-export_json "analytics.get_churn_risk_json" "$DATA_DIR/customers/churn_risk.json" "Churn Risk"
-export_json "analytics.get_demographics_json" "$DATA_DIR/customers/demographics.json" "Demographics"
-export_json "analytics.get_geography_json" "$DATA_DIR/customers/geography.json" "Geography"
+# Export function helper
+export_json() {
+    local func_name=$1
+    local file_name=$2
+    local start_time=$(date +%s%N)
+    
+    psql -d "$DB_NAME" -U "$DB_USER" -t -A -c "SELECT $func_name();" > "$OUTPUT_DIR/$file_name" 2>/dev/null
+    
+    local end_time=$(date +%s%N)
+    local duration=$(( (end_time - start_time) / 1000000 ))
+    local size=$(wc -c < "$OUTPUT_DIR/$file_name" 2>/dev/null || echo "0")
+    
+    if [ -s "$OUTPUT_DIR/$file_name" ]; then
+        echo "  ✓ $file_name (${size} bytes, ${duration}ms)" | tee -a "$LOG_FILE"
+    else
+        echo "  ✗ $file_name — EMPTY OR FAILED" | tee -a "$LOG_FILE"
+    fi
+}
 
-echo -e "${YELLOW}[3/6] Product Data${NC}"
-export_json "analytics.get_top_products_json" "$DATA_DIR/products/top_products.json" "Top Products"
-export_json "analytics.get_category_performance_json" "$DATA_DIR/products/categories.json" "Categories"
-export_json "analytics.get_brand_performance_json" "$DATA_DIR/products/brands.json" "Brands"
-export_json "analytics.get_abc_analysis_json" "$DATA_DIR/products/abc_analysis.json" "ABC Analysis"
-export_json "analytics.get_inventory_status_json" "$DATA_DIR/products/inventory_status.json" "Inventory"
+# ── Tab 1: Executive ──
+echo "[1/10] Executive..." | tee -a "$LOG_FILE"
+export_json "analytics.get_executive_summary_json" "executive_summary.json"
 
-echo -e "${YELLOW}[4/6] Store Data${NC}"
-export_json "analytics.get_top_stores_json" "$DATA_DIR/stores/top_stores.json" "Top Stores"
-export_json "analytics.get_regional_performance_json" "$DATA_DIR/stores/regional.json" "Regional"
-export_json "analytics.get_store_inventory_json" "$DATA_DIR/stores/inventory.json" "Store Inventory"
-export_json "analytics.get_employee_distribution_json" "$DATA_DIR/stores/employees.json" "Employee Distribution"
+# ── Tab 2: Sales ──
+echo "[2/10] Sales..." | tee -a "$LOG_FILE"
+export_json "analytics.get_monthly_trend_json" "monthly_trend.json"
+export_json "analytics.get_recent_trend_json" "recent_trend.json"
+export_json "analytics.get_dayofweek_json" "dayofweek.json"
+export_json "analytics.get_payment_mode_json" "payment_mode.json"
+export_json "analytics.get_quarterly_sales_json" "quarterly_sales.json"
+export_json "analytics.get_weekend_weekday_json" "weekend_weekday.json"
+export_json "analytics.get_order_status_json" "order_status.json"
 
-echo -e "${YELLOW}[5/6] Operations Data${NC}"
-export_json "analytics.get_operations_summary_json" "$DATA_DIR/operations/summary.json" "Summary"
-export_json "analytics.get_delivery_performance_json" "$DATA_DIR/operations/delivery.json" "Delivery"
-export_json "analytics.get_courier_comparison_json" "$DATA_DIR/operations/couriers.json" "Couriers"
-export_json "analytics.get_return_analysis_json" "$DATA_DIR/operations/returns.json" "Returns"
-export_json "analytics.get_pending_shipments_json" "$DATA_DIR/operations/pending.json" "Pending"
+# ── Tab 3: Customers ──
+echo "[3/10] Customers..." | tee -a "$LOG_FILE"
+export_json "analytics.get_top_customers_json" "top_customers.json"
+export_json "analytics.get_clv_tier_distribution_json" "clv_tiers.json"
+export_json "analytics.get_rfm_segments_json" "rfm_segments.json"
+export_json "analytics.get_churn_risk_json" "churn_risk.json"
+export_json "analytics.get_registration_trends_json" "registration_trends.json"
+export_json "analytics.get_geography_json" "geography.json"
+export_json "analytics.get_loyalty_overview_json" "loyalty_overview.json"
 
-echo -e "${YELLOW}[6/6] Marketing Data${NC}"
-export_json "analytics.get_marketing_summary_json" "$DATA_DIR/marketing/summary.json" "Summary"
-export_json "analytics.get_campaign_performance_json" "$DATA_DIR/marketing/campaigns.json" "Campaigns"
-export_json "analytics.get_channel_performance_json" "$DATA_DIR/marketing/channels.json" "Channels"
-export_json "analytics.get_email_engagement_json" "$DATA_DIR/marketing/email.json" "Email"
+# ── Tab 4: Products ──
+echo "[4/10] Products..." | tee -a "$LOG_FILE"
+export_json "analytics.get_top_products_json" "top_products.json"
+export_json "analytics.get_category_performance_json" "category_performance.json"
+export_json "analytics.get_brand_performance_json" "brand_performance.json"
+export_json "analytics.get_abc_analysis_json" "abc_analysis.json"
+export_json "analytics.get_inventory_status_json" "inventory_status.json"
 
-echo -e "${YELLOW}Alerts${NC}"
-export_json "analytics.get_all_alerts_json" "$DATA_DIR/alerts.json" "All Alerts"
+# ── Tab 5: Stores ──
+echo "[5/10] Stores..." | tee -a "$LOG_FILE"
+export_json "analytics.get_top_stores_json" "top_stores.json"
+export_json "analytics.get_regional_performance_json" "regional_performance.json"
+export_json "analytics.get_store_inventory_json" "store_inventory.json"
+export_json "analytics.get_employee_distribution_json" "employee_distribution.json"
 
-echo -e "\n${GREEN}=== EXPORT COMPLETE ===${NC}"
-echo "Files: $(find "$DATA_DIR" -name "*.json" | wc -l) JSON files"
-echo "Location: $DATA_DIR"
+# ── Tab 6: Operations ──
+echo "[6/10] Operations..." | tee -a "$LOG_FILE"
+export_json "analytics.get_operations_summary_json" "operations_summary.json"
+export_json "analytics.get_delivery_performance_json" "delivery_performance.json"
+export_json "analytics.get_courier_comparison_json" "courier_comparison.json"
+export_json "analytics.get_return_analysis_json" "return_analysis.json"
+export_json "analytics.get_pending_shipments_json" "pending_shipments.json"
+export_json "analytics.get_support_overview_json" "support_overview.json"
+export_json "analytics.get_call_center_json" "call_center.json"
+
+# ── Tab 7: Marketing ──
+echo "[7/10] Marketing..." | tee -a "$LOG_FILE"
+export_json "analytics.get_marketing_summary_json" "marketing_summary.json"
+export_json "analytics.get_campaign_performance_json" "campaign_performance.json"
+export_json "analytics.get_channel_performance_json" "channel_performance.json"
+export_json "analytics.get_email_engagement_json" "email_engagement.json"
+export_json "analytics.get_web_analytics_json" "web_analytics.json"
+
+# ── Tab 8: Finance & HR ──
+echo "[8/10] Finance & HR..." | tee -a "$LOG_FILE"
+export_json "analytics.get_finance_summary_json" "finance_summary.json"
+export_json "analytics.get_hr_overview_json" "hr_overview.json"
+export_json "analytics.get_payroll_summary_json" "payroll_summary.json"
+
+# ── Tab 9: Audit & Compliance ──
+echo "[9/10] Audit & Compliance..." | tee -a "$LOG_FILE"
+export_json "analytics.get_audit_overview_json" "audit_overview.json"
+export_json "analytics.get_api_performance_json" "api_performance.json"
+
+# ── Tab 10: Supply Chain ──
+echo "[10/10] Supply Chain & Manufacturing..." | tee -a "$LOG_FILE"
+export_json "analytics.get_supply_chain_json" "supply_chain.json"
+export_json "analytics.get_manufacturing_json" "manufacturing.json"
+
+# ── Alerts ──
+echo "[Bonus] Alerts..." | tee -a "$LOG_FILE"
+export_json "analytics.get_all_alerts_json" "alerts.json"
+
+echo "" | tee -a "$LOG_FILE"
+echo "============================================================================" | tee -a "$LOG_FILE"
+echo "  Export Complete!" | tee -a "$LOG_FILE"
+echo "  Files: $(ls -1 "$OUTPUT_DIR"/*.json 2>/dev/null | wc -l) JSON files exported" | tee -a "$LOG_FILE"
+echo "  Total Size: $(du -sh "$OUTPUT_DIR" | cut -f1)" | tee -a "$LOG_FILE"
+echo "  Finished: $(date)" | tee -a "$LOG_FILE"
+echo "============================================================================" | tee -a "$LOG_FILE"
