@@ -1,64 +1,67 @@
 -- ============================================================================
 -- FILE: 03_kpi_queries/02_customer_analytics.sql
--- PROJECT: RetailMart Enterprise Analytics Platform
--- PURPOSE: Customer Analytics Module - Complete customer behavior tracking
--- AUTHOR: SQL Bootcamp
--- CREATED: 2025
+-- PROJECT: RetailMart V2 Enterprise Analytics Platform
+-- PURPOSE: Customer Analytics Module — CLV, RFM, Cohort, Churn + Loyalty
+-- AUTHOR: Sayyed Siraj Ali
+-- VERSION: 2.0 (RetailMart V2)
+-- DATABASE: accio_retailmart_clean (PostgreSQL 18)
 --
 -- DESCRIPTION:
---   "Your most unhappy customers are your greatest source of learning" - Bill Gates
+--   "Your most unhappy customers are your greatest source of learning" — Bill Gates
 --   
 --   This module helps answer:
 --   - Who are our most valuable customers? (CLV Analysis)
 --   - How should we segment customers? (RFM Analysis)
 --   - Are we retaining customers? (Cohort Retention)
 --   - Who is about to leave? (Churn Prediction)
---   - What do our customers look like? (Demographics)
+--   - Where are our customers? (Geography via addresses)
+--   - How is the loyalty program performing? (NEW in V2)
 --
---   Real-world example: Swiggy spends ₹600 to acquire a customer.
---   They NEED to know if CLV > ₹600, otherwise they're losing money!
+-- V2 CHANGES:
+--   - full_name → first_name || ' ' || last_name
+--   - gender/age/region_name/city/state REMOVED from customers table
+--   - join_date → registration_date
+--   - Location data from customers.addresses (via default address)
+--   - total_amount → net_total
+--   - loyalty_points.total_points → SUM(loyalty_points.points_earned)
+--   - vw_customer_demographics → replaced with vw_customer_registration_trends
+--   - NEW: 3 loyalty views (tier distribution, redemption patterns, ROI)
 --
 -- CREATES:
---   • 4 Regular Views
+--   • 7 Regular Views (4 updated + 3 new loyalty)
 --   • 3 Materialized Views
---   • 6 JSON Export Functions
+--   • 7 JSON Export Functions
 --
 -- EXECUTION ORDER: Run AFTER 01_sales_analytics.sql
 -- ============================================================================
 
 \echo ''
 \echo '============================================================================'
-\echo '             CUSTOMER ANALYTICS MODULE - STARTING                           '
+\echo '         CUSTOMER ANALYTICS MODULE (V2) — STARTING                          '
 \echo '============================================================================'
 \echo ''
 
 -- ============================================================================
 -- MATERIALIZED VIEW 1: CUSTOMER LIFETIME VALUE (CLV)
 -- ============================================================================
--- Purpose: Calculate comprehensive customer value and segment into tiers
--- Business Impact: Determines how much to spend on acquisition/retention
+-- V2: No gender/age, location from addresses, net_total, computed full_name
 -- ============================================================================
 
-\echo '[1/7] Creating materialized view: mv_customer_lifetime_value...'
+\echo '[1/10] Creating materialized view: mv_customer_lifetime_value...'
 
 DROP MATERIALIZED VIEW IF EXISTS analytics.mv_customer_lifetime_value CASCADE;
 
 CREATE MATERIALIZED VIEW analytics.mv_customer_lifetime_value AS
 WITH customer_orders AS (
     SELECT 
-        c.cust_id,
-        c.full_name,
-        c.gender,
-        c.age,
-        c.city,
-        c.state,
-        c.region_name,
-        c.join_date,
+        c.customer_id,
+        c.first_name || ' ' || c.last_name as full_name,
+        c.registration_date,
         
         -- Order Metrics
         COUNT(DISTINCT o.order_id) as total_orders,
-        SUM(o.total_amount) as total_revenue,
-        AVG(o.total_amount) as avg_order_value,
+        SUM(o.net_total) as total_revenue,
+        AVG(o.net_total) as avg_order_value,
         
         -- Timeline
         MIN(o.order_date) as first_order_date,
@@ -70,27 +73,34 @@ WITH customer_orders AS (
         SUM(oi.quantity) as total_items_purchased
         
     FROM customers.customers c
-    LEFT JOIN sales.orders o ON c.cust_id = o.cust_id AND o.order_status = 'Delivered'
+    LEFT JOIN sales.orders o ON c.customer_id = o.cust_id AND o.order_status = 'Delivered'
     LEFT JOIN sales.order_items oi ON o.order_id = oi.order_id
-    GROUP BY c.cust_id, c.full_name, c.gender, c.age, c.city, c.state, c.region_name, c.join_date
+    GROUP BY c.customer_id, c.first_name, c.last_name, c.registration_date
 ),
+-- V2: Get default address for each customer
+customer_address AS (
+    SELECT DISTINCT ON (customer_id)
+        customer_id, city, state
+    FROM customers.addresses
+    ORDER BY customer_id, is_default DESC, address_id
+),
+-- V2: Loyalty points are per-transaction, need SUM
 customer_loyalty AS (
-    SELECT cust_id, total_points FROM customers.loyalty_points
+    SELECT customer_id, SUM(points_earned) as total_points
+    FROM customers.loyalty_points
+    GROUP BY customer_id
 ),
 customer_reviews AS (
-    SELECT cust_id, COUNT(*) as review_count, ROUND(AVG(rating), 2) as avg_rating_given
+    SELECT customer_id, COUNT(*) as review_count, ROUND(AVG(rating), 2) as avg_rating_given
     FROM customers.reviews
-    GROUP BY cust_id
+    GROUP BY customer_id
 )
 SELECT 
-    co.cust_id,
+    co.customer_id,
     co.full_name,
-    co.gender,
-    co.age,
-    co.city,
-    co.state,
-    co.region_name,
-    co.join_date,
+    COALESCE(ca.city, 'Unknown') as city,
+    COALESCE(ca.state, 'Unknown') as state,
+    co.registration_date,
     
     -- Order Metrics
     COALESCE(co.total_orders, 0) as total_orders,
@@ -109,18 +119,16 @@ SELECT
     COALESCE(cr.review_count, 0) as review_count,
     COALESCE(cr.avg_rating_given, 0) as avg_rating_given,
     
-    -- Calculated Metrics
+    -- Projected Annual Value
     ROUND(
-        COALESCE(co.total_revenue, 0) / NULLIF(GREATEST(co.customer_lifespan_days, 1), 0) * 365,
-        2
+        COALESCE(co.total_revenue, 0) / NULLIF(GREATEST(co.customer_lifespan_days, 1), 0) * 365, 2
     )::NUMERIC as projected_annual_value,
     
     ROUND(
-        COALESCE(co.total_orders, 0)::NUMERIC / NULLIF(GREATEST(co.customer_lifespan_days, 1), 0) * 30,
-        2
+        COALESCE(co.total_orders, 0)::NUMERIC / NULLIF(GREATEST(co.customer_lifespan_days, 1), 0) * 30, 2
     ) as avg_orders_per_month,
     
-    -- CLV Tier (using config values)
+    -- CLV Tier
     CASE 
         WHEN COALESCE(co.total_revenue, 0) >= (SELECT analytics.get_config_number('clv_tier_platinum')) THEN 'Platinum'
         WHEN COALESCE(co.total_revenue, 0) >= (SELECT analytics.get_config_number('clv_tier_gold')) THEN 'Gold'
@@ -136,28 +144,19 @@ SELECT
         WHEN co.days_since_last_order <= (SELECT analytics.get_config_number('rfm_recency_at_risk_days')) THEN 'At Risk'
         WHEN co.days_since_last_order <= (SELECT analytics.get_config_number('rfm_recency_churning_days')) THEN 'Churning'
         ELSE 'Churned'
-    END as customer_status,
-    
-    -- Age Group
-    CASE 
-        WHEN co.age < 25 THEN '18-24'
-        WHEN co.age < 35 THEN '25-34'
-        WHEN co.age < 45 THEN '35-44'
-        WHEN co.age < 55 THEN '45-54'
-        ELSE '55+'
-    END as age_group
+    END as customer_status
 
 FROM customer_orders co
-LEFT JOIN customer_loyalty cl ON co.cust_id = cl.cust_id
-LEFT JOIN customer_reviews cr ON co.cust_id = cr.cust_id;
+LEFT JOIN customer_address ca ON co.customer_id = ca.customer_id
+LEFT JOIN customer_loyalty cl ON co.customer_id = cl.customer_id
+LEFT JOIN customer_reviews cr ON co.customer_id = cr.customer_id;
 
--- Create indexes
 CREATE INDEX IF NOT EXISTS idx_clv_tier ON analytics.mv_customer_lifetime_value(clv_tier);
 CREATE INDEX IF NOT EXISTS idx_clv_status ON analytics.mv_customer_lifetime_value(customer_status);
-CREATE INDEX IF NOT EXISTS idx_clv_region ON analytics.mv_customer_lifetime_value(region_name);
+CREATE INDEX IF NOT EXISTS idx_clv_city ON analytics.mv_customer_lifetime_value(city);
 
 COMMENT ON MATERIALIZED VIEW analytics.mv_customer_lifetime_value IS 
-    'Customer Lifetime Value with tier classification - Refresh daily';
+    'Customer Lifetime Value with tier classification — Refresh daily';
 
 \echo '      ✓ Materialized view created: mv_customer_lifetime_value'
 
@@ -165,64 +164,51 @@ COMMENT ON MATERIALIZED VIEW analytics.mv_customer_lifetime_value IS
 -- ============================================================================
 -- MATERIALIZED VIEW 2: RFM ANALYSIS
 -- ============================================================================
--- Purpose: Segment customers by Recency, Frequency, Monetary value
--- Use Case: Targeted marketing, personalized campaigns
--- 
--- RFM Scoring: Each dimension scored 1-5 (5 = best)
--- - Recency: How recently did they purchase? (Lower days = Higher score)
--- - Frequency: How often do they purchase? (More orders = Higher score)
--- - Monetary: How much do they spend? (Higher spend = Higher score)
+-- V2: customer_id, computed full_name, city/state from addresses, net_total
 -- ============================================================================
 
-\echo '[2/7] Creating materialized view: mv_rfm_analysis...'
+\echo '[2/10] Creating materialized view: mv_rfm_analysis...'
 
 DROP MATERIALIZED VIEW IF EXISTS analytics.mv_rfm_analysis CASCADE;
 
 CREATE MATERIALIZED VIEW analytics.mv_rfm_analysis AS
 WITH customer_rfm AS (
     SELECT 
-        c.cust_id,
-        c.full_name,
-        c.city,
-        c.state,
+        c.customer_id,
+        c.first_name || ' ' || c.last_name as full_name,
         (SELECT MAX(order_date) FROM sales.orders) - MAX(o.order_date) as recency_days,
         COUNT(DISTINCT o.order_id) as frequency,
-        SUM(o.total_amount) as monetary
+        SUM(o.net_total) as monetary
     FROM customers.customers c
-    JOIN sales.orders o ON c.cust_id = o.cust_id AND o.order_status = 'Delivered'
-    GROUP BY c.cust_id, c.full_name, c.city, c.state
+    JOIN sales.orders o ON c.customer_id = o.cust_id AND o.order_status = 'Delivered'
+    GROUP BY c.customer_id, c.first_name, c.last_name
 ),
 rfm_scores AS (
     SELECT 
         *,
-        -- Score 1-5 using NTILE (quintiles)
-        NTILE(5) OVER (ORDER BY recency_days DESC) as r_score,  -- Lower days = Higher score
-        NTILE(5) OVER (ORDER BY frequency ASC) as f_score,      -- More orders = Higher score
-        NTILE(5) OVER (ORDER BY monetary ASC) as m_score        -- Higher spend = Higher score
+        NTILE(5) OVER (ORDER BY recency_days DESC) as r_score,
+        NTILE(5) OVER (ORDER BY frequency ASC) as f_score,
+        NTILE(5) OVER (ORDER BY monetary ASC) as m_score
     FROM customer_rfm
-    WHERE frequency > 0  -- Only customers with purchases
+    WHERE frequency > 0
 )
 SELECT 
-    cust_id,
+    customer_id,
     full_name,
-    city,
-    state,
     
     -- Raw Metrics
     recency_days,
     frequency as order_count,
     ROUND(monetary::NUMERIC, 2) as total_spent,
     
-    -- RFM Scores (1-5)
+    -- RFM Scores
     r_score as recency_score,
     f_score as frequency_score,
     m_score as monetary_score,
-    
-    -- Combined RFM Score
     CONCAT(r_score, f_score, m_score) as rfm_score,
     r_score + f_score + m_score as rfm_total,
     
-    -- Customer Segment (based on RFM combination)
+    -- Customer Segment
     CASE
         WHEN r_score >= 4 AND f_score >= 4 AND m_score >= 4 THEN 'Champions'
         WHEN r_score >= 4 AND f_score >= 3 AND m_score >= 3 THEN 'Loyal Customers'
@@ -237,21 +223,20 @@ SELECT
     
     -- Recommended Action
     CASE
-        WHEN r_score >= 4 AND f_score >= 4 THEN 'Reward - Exclusive offers & early access'
-        WHEN r_score >= 4 AND f_score <= 2 THEN 'Nurture - Onboarding, product education'
-        WHEN r_score <= 2 AND f_score >= 3 THEN 'Win Back - Special discount, reach out'
-        WHEN r_score <= 2 AND f_score <= 2 AND m_score >= 3 THEN 'Reactivate - Strong offer to return'
-        WHEN r_score <= 2 AND f_score <= 2 THEN 'Last Chance - Deep discount or let go'
-        ELSE 'Engage - Regular communication'
+        WHEN r_score >= 4 AND f_score >= 4 THEN 'Reward — Exclusive offers & early access'
+        WHEN r_score >= 4 AND f_score <= 2 THEN 'Nurture — Onboarding, product education'
+        WHEN r_score <= 2 AND f_score >= 3 THEN 'Win Back — Special discount, reach out'
+        WHEN r_score <= 2 AND f_score <= 2 AND m_score >= 3 THEN 'Reactivate — Strong offer to return'
+        WHEN r_score <= 2 AND f_score <= 2 THEN 'Last Chance — Deep discount or let go'
+        ELSE 'Engage — Regular communication'
     END as recommended_action
 
 FROM rfm_scores;
 
--- Create index on segment for quick filtering
 CREATE INDEX IF NOT EXISTS idx_rfm_segment ON analytics.mv_rfm_analysis(rfm_segment);
 
 COMMENT ON MATERIALIZED VIEW analytics.mv_rfm_analysis IS 
-    'RFM segmentation for targeted marketing - Refresh weekly';
+    'RFM segmentation for targeted marketing — Refresh weekly';
 
 \echo '      ✓ Materialized view created: mv_rfm_analysis'
 
@@ -259,20 +244,15 @@ COMMENT ON MATERIALIZED VIEW analytics.mv_rfm_analysis IS
 -- ============================================================================
 -- MATERIALIZED VIEW 3: COHORT RETENTION
 -- ============================================================================
--- Purpose: Track how well we retain customers over time
--- Use Case: Measure product-market fit, identify retention issues
--- 
--- A cohort is a group of customers who made their first purchase in the same month.
--- We track what % of each cohort returns in subsequent months.
+-- V2: No column changes needed (uses cust_id/order_date from sales.orders)
 -- ============================================================================
 
-\echo '[3/7] Creating materialized view: mv_cohort_retention...'
+\echo '[3/10] Creating materialized view: mv_cohort_retention...'
 
 DROP MATERIALIZED VIEW IF EXISTS analytics.mv_cohort_retention CASCADE;
 
 CREATE MATERIALIZED VIEW analytics.mv_cohort_retention AS
 WITH customer_first_order AS (
-    -- Get each customer's first order month (their cohort)
     SELECT 
         cust_id,
         DATE_TRUNC('month', MIN(order_date))::DATE as cohort_month
@@ -281,7 +261,6 @@ WITH customer_first_order AS (
     GROUP BY cust_id
 ),
 customer_activity AS (
-    -- Get all months each customer was active
     SELECT DISTINCT
         o.cust_id,
         DATE_TRUNC('month', o.order_date)::DATE as activity_month
@@ -289,11 +268,9 @@ customer_activity AS (
     WHERE o.order_status = 'Delivered'
 ),
 cohort_data AS (
-    -- Combine cohort with activity
     SELECT 
         cfo.cohort_month,
         ca.activity_month,
-        -- Calculate months since cohort (0 = first month)
         EXTRACT(YEAR FROM AGE(ca.activity_month, cfo.cohort_month)) * 12 +
         EXTRACT(MONTH FROM AGE(ca.activity_month, cfo.cohort_month)) as months_since_cohort,
         COUNT(DISTINCT cfo.cust_id) as customer_count
@@ -302,7 +279,6 @@ cohort_data AS (
     GROUP BY cfo.cohort_month, ca.activity_month
 ),
 cohort_sizes AS (
-    -- Get initial cohort sizes
     SELECT 
         cohort_month,
         COUNT(DISTINCT cust_id) as cohort_size
@@ -318,14 +294,13 @@ SELECT
     ROUND((cd.customer_count::NUMERIC / cs.cohort_size * 100), 2) as retention_rate
 FROM cohort_data cd
 JOIN cohort_sizes cs ON cd.cohort_month = cs.cohort_month
-WHERE cd.months_since_cohort <= 12  -- Track up to 12 months
+WHERE cd.months_since_cohort <= 12
 ORDER BY cd.cohort_month DESC, cd.months_since_cohort;
 
--- Create index for quick cohort lookups
 CREATE INDEX IF NOT EXISTS idx_cohort_month ON analytics.mv_cohort_retention(cohort_month);
 
 COMMENT ON MATERIALIZED VIEW analytics.mv_cohort_retention IS 
-    'Monthly cohort retention analysis - Refresh weekly';
+    'Monthly cohort retention analysis — Refresh weekly';
 
 \echo '      ✓ Materialized view created: mv_cohort_retention'
 
@@ -333,15 +308,12 @@ COMMENT ON MATERIALIZED VIEW analytics.mv_cohort_retention IS
 -- ============================================================================
 -- VIEW 1: CHURN RISK CUSTOMERS
 -- ============================================================================
--- Purpose: Identify high-value customers at risk of churning
--- Use Case: Proactive retention campaigns
--- ============================================================================
 
-\echo '[4/7] Creating view: vw_churn_risk_customers...'
+\echo '[4/10] Creating view: vw_churn_risk_customers...'
 
 CREATE OR REPLACE VIEW analytics.vw_churn_risk_customers AS
 SELECT 
-    cust_id,
+    customer_id,
     full_name,
     city,
     state,
@@ -350,7 +322,6 @@ SELECT
     total_revenue as total_spent,
     days_since_last_order as days_inactive,
     
-    -- Churn Risk Level
     CASE 
         WHEN days_since_last_order > 180 THEN 'Churned'
         WHEN days_since_last_order > 90 THEN 'High Risk'
@@ -359,8 +330,6 @@ SELECT
         ELSE 'Active'
     END as churn_risk_level,
     
-    -- Priority Score (Higher = More urgent to retain)
-    -- High value + Long inactive = Highest priority
     CASE 
         WHEN clv_tier = 'Platinum' THEN 5
         WHEN clv_tier = 'Gold' THEN 4
@@ -375,7 +344,6 @@ SELECT
         ELSE 0
     END as priority_score,
     
-    -- Recommended Action
     CASE 
         WHEN clv_tier IN ('Platinum', 'Gold') AND days_since_last_order > 60 
             THEN 'URGENT: Personal outreach from account manager'
@@ -392,7 +360,7 @@ SELECT
 
 FROM analytics.mv_customer_lifetime_value
 WHERE total_orders > 0
-AND days_since_last_order > 30  -- Focus on at-risk customers
+AND days_since_last_order > 30
 ORDER BY priority_score DESC, total_revenue DESC;
 
 COMMENT ON VIEW analytics.vw_churn_risk_customers IS 'High-value customers at risk of churning';
@@ -401,51 +369,50 @@ COMMENT ON VIEW analytics.vw_churn_risk_customers IS 'High-value customers at ri
 
 
 -- ============================================================================
--- VIEW 2: CUSTOMER DEMOGRAPHICS
+-- VIEW 2: CUSTOMER REGISTRATION TRENDS (V2 — replaces demographics)
 -- ============================================================================
--- Purpose: Understand customer base composition
--- Use Case: Marketing targeting, product development
+-- V2: No gender/age in schema. This view tracks registration trends,
+-- which is more actionable for growth analysis.
 -- ============================================================================
 
-\echo '[5/7] Creating view: vw_customer_demographics...'
+\echo '[5/10] Creating view: vw_customer_registration_trends...'
 
-CREATE OR REPLACE VIEW analytics.vw_customer_demographics AS
+CREATE OR REPLACE VIEW analytics.vw_customer_registration_trends AS
+WITH monthly_signups AS (
+    SELECT 
+        DATE_TRUNC('month', registration_date)::DATE as signup_month,
+        COUNT(*) as new_signups
+    FROM customers.customers
+    GROUP BY DATE_TRUNC('month', registration_date)
+)
 SELECT 
-    age_group,
-    gender,
-    COUNT(*) as customer_count,
-    SUM(total_revenue) as total_revenue,
-    ROUND(AVG(total_revenue)::NUMERIC, 2) as avg_revenue_per_customer,
-    ROUND(AVG(total_orders)::NUMERIC, 1) as avg_orders_per_customer,
-    
-    -- Percentage calculations
+    signup_month,
+    TO_CHAR(signup_month, 'Mon YYYY') as month_name,
+    new_signups,
+    SUM(new_signups) OVER (ORDER BY signup_month) as cumulative_customers,
+    LAG(new_signups) OVER (ORDER BY signup_month) as prev_month_signups,
     ROUND(
-        (COUNT(*)::NUMERIC / SUM(COUNT(*)) OVER () * 100), 
-        2
-    ) as pct_of_customers,
+        ((new_signups - LAG(new_signups) OVER (ORDER BY signup_month))::NUMERIC /
+        NULLIF(LAG(new_signups) OVER (ORDER BY signup_month), 0) * 100), 2
+    ) as mom_growth_pct,
     ROUND(
-        (SUM(total_revenue) / SUM(SUM(total_revenue)) OVER () * 100)::NUMERIC, 
-        2
-    ) as pct_of_revenue
+        AVG(new_signups) OVER (ORDER BY signup_month ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 0
+    ) as moving_avg_3month
+FROM monthly_signups
+ORDER BY signup_month DESC;
 
-FROM analytics.mv_customer_lifetime_value
-WHERE total_orders > 0
-GROUP BY age_group, gender
-ORDER BY total_revenue DESC;
+COMMENT ON VIEW analytics.vw_customer_registration_trends IS 'Monthly customer signup trends with growth metrics';
 
-COMMENT ON VIEW analytics.vw_customer_demographics IS 'Customer breakdown by age group and gender';
-
-\echo '      ✓ View created: vw_customer_demographics'
+\echo '      ✓ View created: vw_customer_registration_trends'
 
 
 -- ============================================================================
 -- VIEW 3: CUSTOMER GEOGRAPHY
 -- ============================================================================
--- Purpose: Geographic distribution of customers
--- Use Case: Store expansion, regional marketing
+-- V2: Uses CLV MV which already has city/state from addresses
 -- ============================================================================
 
-\echo '[6/7] Creating view: vw_customer_geography...'
+\echo '[6/10] Creating view: vw_customer_geography...'
 
 CREATE OR REPLACE VIEW analytics.vw_customer_geography AS
 WITH geo_stats AS (
@@ -482,11 +449,8 @@ COMMENT ON VIEW analytics.vw_customer_geography IS 'Customer distribution by loc
 -- ============================================================================
 -- VIEW 4: NEW VS RETURNING CUSTOMERS
 -- ============================================================================
--- Purpose: Track customer acquisition vs retention
--- Use Case: Balance acquisition and retention spend
--- ============================================================================
 
-\echo '[7/7] Creating view: vw_new_vs_returning...'
+\echo '[7/10] Creating view: vw_new_vs_returning...'
 
 CREATE OR REPLACE VIEW analytics.vw_new_vs_returning AS
 WITH customer_first_order AS (
@@ -499,7 +463,7 @@ monthly_breakdown AS (
     SELECT 
         DATE_TRUNC('month', o.order_date)::DATE as order_month,
         COUNT(DISTINCT o.order_id) as total_orders,
-        SUM(o.total_amount) as total_revenue,
+        SUM(o.net_total) as total_revenue,
         COUNT(DISTINCT o.cust_id) as total_customers,
         COUNT(DISTINCT o.cust_id) FILTER (
             WHERE DATE_TRUNC('month', o.order_date) = DATE_TRUNC('month', cfo.first_order_date)
@@ -531,6 +495,143 @@ COMMENT ON VIEW analytics.vw_new_vs_returning IS 'New vs returning customer brea
 
 
 -- ============================================================================
+-- 🆕 VIEW 5: LOYALTY TIER DISTRIBUTION (NEW in V2)
+-- ============================================================================
+
+\echo '[8/10] Creating view: vw_loyalty_tier_distribution...'
+
+CREATE OR REPLACE VIEW analytics.vw_loyalty_tier_distribution AS
+SELECT 
+    t.tier_name,
+    t.min_points,
+    t.max_points,
+    COUNT(m.customer_id) as member_count,
+    ROUND(AVG(m.points_balance)::NUMERIC, 0) as avg_points_balance,
+    ROUND(SUM(m.points_balance)::NUMERIC, 0) as total_points_balance,
+    ROUND(
+        (COUNT(m.customer_id)::NUMERIC / NULLIF(SUM(COUNT(m.customer_id)) OVER (), 0) * 100), 2
+    ) as pct_of_members
+FROM loyalty.tiers t
+LEFT JOIN loyalty.members m ON t.tier_id = m.tier_id
+GROUP BY t.tier_id, t.tier_name, t.min_points, t.max_points
+ORDER BY t.min_points DESC;
+
+COMMENT ON VIEW analytics.vw_loyalty_tier_distribution IS 'Loyalty program tier distribution and point balances';
+
+\echo '      ✓ View created: vw_loyalty_tier_distribution'
+
+
+-- ============================================================================
+-- 🆕 VIEW 6: LOYALTY REDEMPTION PATTERNS (NEW in V2)
+-- ============================================================================
+
+\echo '[9/10] Creating view: vw_loyalty_redemption_patterns...'
+
+CREATE OR REPLACE VIEW analytics.vw_loyalty_redemption_patterns AS
+WITH monthly_redemptions AS (
+    SELECT 
+        DATE_TRUNC('month', r.redemption_date)::DATE as redemption_month,
+        COUNT(*) as redemption_count,
+        SUM(r.points_redeemed) as total_points_redeemed,
+        COUNT(DISTINCT r.customer_id) as unique_redeemers
+    FROM loyalty.redemptions r
+    GROUP BY DATE_TRUNC('month', r.redemption_date)
+),
+reward_popularity AS (
+    SELECT 
+        r.reward_name,
+        COUNT(*) as times_redeemed,
+        SUM(r.points_redeemed) as total_points,
+        COUNT(DISTINCT r.customer_id) as unique_customers,
+        RANK() OVER (ORDER BY COUNT(*) DESC) as popularity_rank
+    FROM loyalty.redemptions r
+    GROUP BY r.reward_name
+)
+SELECT 
+    'monthly' as view_type,
+    mr.redemption_month::TEXT as dimension,
+    TO_CHAR(mr.redemption_month, 'Mon YYYY') as label,
+    mr.redemption_count as count_value,
+    mr.total_points_redeemed as points_value,
+    mr.unique_redeemers as customer_count,
+    NULL::INTEGER as rank_value
+FROM monthly_redemptions mr
+
+UNION ALL
+
+SELECT 
+    'reward' as view_type,
+    rp.reward_name as dimension,
+    rp.reward_name as label,
+    rp.times_redeemed as count_value,
+    rp.total_points as points_value,
+    rp.unique_customers as customer_count,
+    rp.popularity_rank as rank_value
+FROM reward_popularity rp
+WHERE rp.popularity_rank <= 15
+
+ORDER BY view_type, dimension DESC;
+
+COMMENT ON VIEW analytics.vw_loyalty_redemption_patterns IS 'Loyalty redemption trends and popular rewards';
+
+\echo '      ✓ View created: vw_loyalty_redemption_patterns'
+
+
+-- ============================================================================
+-- 🆕 VIEW 7: LOYALTY PROGRAM ROI (NEW in V2)
+-- ============================================================================
+
+\echo '[10/10] Creating view: vw_loyalty_program_roi...'
+
+CREATE OR REPLACE VIEW analytics.vw_loyalty_program_roi AS
+WITH loyalty_member_stats AS (
+    -- Revenue from loyalty members vs non-members
+    SELECT 
+        CASE WHEN lm.customer_id IS NOT NULL THEN 'Loyalty Member' ELSE 'Non-Member' END as segment,
+        COUNT(DISTINCT c.customer_id) as customer_count,
+        COUNT(DISTINCT o.order_id) as total_orders,
+        SUM(o.net_total) as total_revenue,
+        AVG(o.net_total) as avg_order_value,
+        ROUND(
+            COUNT(DISTINCT o.order_id)::NUMERIC / NULLIF(COUNT(DISTINCT c.customer_id), 0), 2
+        ) as orders_per_customer
+    FROM customers.customers c
+    LEFT JOIN loyalty.members lm ON c.customer_id = lm.customer_id
+    LEFT JOIN sales.orders o ON c.customer_id = o.cust_id AND o.order_status = 'Delivered'
+    GROUP BY CASE WHEN lm.customer_id IS NOT NULL THEN 'Loyalty Member' ELSE 'Non-Member' END
+),
+points_summary AS (
+    SELECT 
+        SUM(lp.points_earned) as total_points_earned,
+        (SELECT SUM(points_redeemed) FROM loyalty.redemptions) as total_points_redeemed,
+        (SELECT SUM(points_balance) FROM loyalty.members) as total_points_outstanding
+    FROM customers.loyalty_points lp
+)
+SELECT 
+    lms.segment,
+    lms.customer_count,
+    lms.total_orders,
+    ROUND(lms.total_revenue::NUMERIC, 2) as total_revenue,
+    ROUND(lms.avg_order_value::NUMERIC, 2) as avg_order_value,
+    lms.orders_per_customer,
+    ROUND(
+        (lms.total_revenue / NULLIF(lms.customer_count, 0))::NUMERIC, 2
+    ) as revenue_per_customer,
+    ROUND(
+        (lms.customer_count::NUMERIC / SUM(lms.customer_count) OVER () * 100), 2
+    ) as pct_of_customers,
+    ROUND(
+        (lms.total_revenue / NULLIF(SUM(lms.total_revenue) OVER (), 0) * 100)::NUMERIC, 2
+    ) as pct_of_revenue
+FROM loyalty_member_stats lms
+ORDER BY total_revenue DESC;
+
+COMMENT ON VIEW analytics.vw_loyalty_program_roi IS 'Loyalty member vs non-member performance comparison';
+
+\echo '      ✓ View created: vw_loyalty_program_roi'
+
+
+-- ============================================================================
 -- JSON EXPORT FUNCTIONS
 -- ============================================================================
 
@@ -544,7 +645,7 @@ BEGIN
     RETURN (
         SELECT json_agg(
             json_build_object(
-                'custId', cust_id,
+                'customerId', customer_id,
                 'fullName', full_name,
                 'city', city,
                 'state', state,
@@ -578,13 +679,7 @@ BEGIN
                 'pctOfCustomers', pct_of_customers,
                 'pctOfRevenue', pct_of_revenue
             ) ORDER BY 
-                CASE clv_tier 
-                    WHEN 'Platinum' THEN 1 
-                    WHEN 'Gold' THEN 2 
-                    WHEN 'Silver' THEN 3 
-                    WHEN 'Bronze' THEN 4 
-                    ELSE 5 
-                END
+                CASE clv_tier WHEN 'Platinum' THEN 1 WHEN 'Gold' THEN 2 WHEN 'Silver' THEN 3 WHEN 'Bronze' THEN 4 ELSE 5 END
         )
         FROM (
             SELECT 
@@ -649,13 +744,7 @@ BEGIN
                         'avgDaysInactive', avg_days_inactive,
                         'pctOfCustomers', pct_of_customers
                     ) ORDER BY 
-                        CASE churn_risk_level 
-                            WHEN 'Churned' THEN 1 
-                            WHEN 'High Risk' THEN 2 
-                            WHEN 'Medium Risk' THEN 3 
-                            WHEN 'Low Risk' THEN 4 
-                            ELSE 5 
-                        END
+                        CASE churn_risk_level WHEN 'Churned' THEN 1 WHEN 'High Risk' THEN 2 WHEN 'Medium Risk' THEN 3 WHEN 'Low Risk' THEN 4 ELSE 5 END
                 )
                 FROM (
                     SELECT 
@@ -671,7 +760,7 @@ BEGIN
             'highPriorityCustomers', (
                 SELECT json_agg(
                     json_build_object(
-                        'custId', cust_id,
+                        'customerId', customer_id,
                         'fullName', full_name,
                         'clvTier', clv_tier,
                         'totalSpent', total_spent,
@@ -688,23 +777,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- JSON 5: Demographics
-CREATE OR REPLACE FUNCTION analytics.get_demographics_json()
+-- JSON 5: Registration Trends (V2 — replaces demographics)
+CREATE OR REPLACE FUNCTION analytics.get_registration_trends_json()
 RETURNS JSON AS $$
 BEGIN
     RETURN (
         SELECT json_agg(
             json_build_object(
-                'ageGroup', age_group,
-                'gender', gender,
-                'customerCount', customer_count,
-                'totalRevenue', total_revenue,
-                'avgRevenue', avg_revenue_per_customer,
-                'pctOfCustomers', pct_of_customers,
-                'pctOfRevenue', pct_of_revenue
-            ) ORDER BY total_revenue DESC
+                'month', signup_month,
+                'monthName', month_name,
+                'newSignups', new_signups,
+                'cumulative', cumulative_customers,
+                'momGrowth', mom_growth_pct,
+                'movingAvg3M', moving_avg_3month
+            ) ORDER BY signup_month DESC
         )
-        FROM analytics.vw_customer_demographics
+        FROM analytics.vw_customer_registration_trends
     );
 END;
 $$ LANGUAGE plpgsql STABLE;
@@ -732,7 +820,42 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
-\echo '      ✓ JSON functions created (6 functions)'
+-- JSON 7: Loyalty Overview (NEW in V2)
+CREATE OR REPLACE FUNCTION analytics.get_loyalty_overview_json()
+RETURNS JSON AS $$
+BEGIN
+    RETURN (
+        SELECT json_build_object(
+            'tierDistribution', (
+                SELECT json_agg(
+                    json_build_object(
+                        'tier', tier_name,
+                        'members', member_count,
+                        'avgBalance', avg_points_balance,
+                        'pctOfMembers', pct_of_members
+                    ) ORDER BY min_points DESC
+                )
+                FROM analytics.vw_loyalty_tier_distribution
+            ),
+            'memberVsNonMember', (
+                SELECT json_agg(
+                    json_build_object(
+                        'segment', segment,
+                        'customers', customer_count,
+                        'revenue', total_revenue,
+                        'avgOrderValue', avg_order_value,
+                        'ordersPerCustomer', orders_per_customer,
+                        'pctOfRevenue', pct_of_revenue
+                    )
+                )
+                FROM analytics.vw_loyalty_program_roi
+            )
+        )
+    );
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+\echo '      ✓ JSON functions created (7 functions)'
 
 
 -- ============================================================================
@@ -755,38 +878,36 @@ REFRESH MATERIALIZED VIEW analytics.mv_cohort_retention;
 
 \echo ''
 \echo '============================================================================'
-\echo '             CUSTOMER ANALYTICS MODULE - COMPLETE                           '
+\echo '          CUSTOMER ANALYTICS MODULE (V2) — COMPLETE                         '
 \echo '============================================================================'
 \echo ''
-\echo '✅ Regular Views (4):'
-\echo '   • vw_churn_risk_customers    - At-risk customers prioritized'
-\echo '   • vw_customer_demographics   - Age/gender breakdown'
-\echo '   • vw_customer_geography      - Location distribution'
-\echo '   • vw_new_vs_returning        - Acquisition vs retention'
+\echo '✅ Regular Views (7):'
+\echo '   • vw_churn_risk_customers        — At-risk customers prioritized'
+\echo '   • vw_customer_registration_trends — Signup trends (replaces demographics)'
+\echo '   • vw_customer_geography           — Location distribution'
+\echo '   • vw_new_vs_returning             — Acquisition vs retention'
+\echo '   • vw_loyalty_tier_distribution    — Loyalty tiers 🆕'
+\echo '   • vw_loyalty_redemption_patterns  — Redemption trends 🆕'
+\echo '   • vw_loyalty_program_roi          — Member vs non-member 🆕'
 \echo ''
 \echo '✅ Materialized Views (3):'
-\echo '   • mv_customer_lifetime_value  - CLV with tiers'
-\echo '   • mv_rfm_analysis            - RFM segmentation'
-\echo '   • mv_cohort_retention        - Cohort retention rates'
+\echo '   • mv_customer_lifetime_value  — CLV with tiers'
+\echo '   • mv_rfm_analysis             — RFM segmentation'
+\echo '   • mv_cohort_retention          — Cohort retention rates'
 \echo ''
-\echo '✅ JSON Functions (6):'
+\echo '✅ JSON Functions (7):'
 \echo '   • get_top_customers_json()'
 \echo '   • get_clv_tier_distribution_json()'
 \echo '   • get_rfm_segments_json()'
 \echo '   • get_churn_risk_json()'
-\echo '   • get_demographics_json()'
+\echo '   • get_registration_trends_json()  (V2 — replaces demographics)'
 \echo '   • get_geography_json()'
-\echo ''
-\echo '📊 Quick Test:'
-\echo '   SELECT clv_tier, COUNT(*), ROUND(SUM(total_revenue)::NUMERIC, 2)'
-\echo '   FROM analytics.mv_customer_lifetime_value'
-\echo '   GROUP BY clv_tier ORDER BY 3 DESC;'
+\echo '   • get_loyalty_overview_json()     🆕'
 \echo ''
 \echo '➡️  Next: Run 03_product_analytics.sql'
 \echo '============================================================================'
 \echo ''
 
--- Show CLV distribution
 SELECT 
     clv_tier,
     COUNT(*) as customers,

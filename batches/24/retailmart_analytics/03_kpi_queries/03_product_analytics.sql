@@ -1,31 +1,25 @@
 -- ============================================================================
 -- FILE: 03_kpi_queries/03_product_analytics.sql
--- PROJECT: RetailMart Enterprise Analytics Platform
--- PURPOSE: Product Analytics Module - Complete product performance tracking
--- AUTHOR: SQL Bootcamp
--- CREATED: 2025
+-- PROJECT: RetailMart V2 Enterprise Analytics Platform
+-- PURPOSE: Product Analytics Module — Top Products, ABC, Category, Brand, Inventory
+-- AUTHOR: Sayyed Siraj Ali
+-- VERSION: 2.0 (RetailMart V2)
+-- DATABASE: accio_retailmart_clean (PostgreSQL 18)
 --
--- DESCRIPTION:
---   "80% of your revenue comes from 20% of your products" - Pareto Principle
---   
---   This module answers:
---   - What are our best sellers? (Top Products)
---   - Which products drive most revenue? (ABC Analysis)
---   - How are categories performing? (Category Analysis)
---   - Which brands dominate? (Brand Analysis)
---   - Is inventory moving fast enough? (Inventory Turnover)
+-- V2 CHANGES:
+--   - prod_name → product_name
+--   - category/brand → via dim_brand → dim_category JOIN chain
+--   - oi.discount (%) → oi.discount_amount / oi.net_amount (absolute)
+--   - stock_qty → quantity_on_hand
+--   - prod_id → product_id on products/inventory tables
+--   - reviews: prod_id → product_id, cust_id → customer_id
 --
--- CREATES:
---   • 3 Regular Views
---   • 2 Materialized Views
---   • 5 JSON Export Functions
---
--- EXECUTION ORDER: Run AFTER 02_customer_analytics.sql
+-- CREATES: 3 Views + 2 MVs + 5 JSON Functions
 -- ============================================================================
 
 \echo ''
 \echo '============================================================================'
-\echo '              PRODUCT ANALYTICS MODULE - STARTING                           '
+\echo '          PRODUCT ANALYTICS MODULE (V2) — STARTING                          '
 \echo '============================================================================'
 \echo ''
 
@@ -40,60 +34,66 @@ DROP MATERIALIZED VIEW IF EXISTS analytics.mv_top_products CASCADE;
 CREATE MATERIALIZED VIEW analytics.mv_top_products AS
 WITH product_sales AS (
     SELECT 
-        p.prod_id,
-        p.prod_name,
-        p.category,
-        p.brand,
+        p.product_id,
+        p.product_name,
+        cat.category_name as category,
+        b.brand_name as brand,
         p.price as list_price,
+        p.cost_price,
         COUNT(DISTINCT oi.order_id) as times_ordered,
         SUM(oi.quantity) as total_units_sold,
-        SUM(oi.quantity * oi.unit_price) as gross_revenue,
-        SUM(oi.quantity * oi.unit_price * oi.discount / 100) as total_discounts,
-        SUM(oi.quantity * oi.unit_price * (1 - oi.discount / 100)) as net_revenue,
-        AVG(oi.unit_price) as avg_selling_price,
-        AVG(oi.discount) as avg_discount_pct
+        SUM(oi.gross_amount) as gross_revenue,
+        SUM(oi.discount_amount) as total_discounts,
+        SUM(oi.net_amount) as net_revenue,
+        AVG(oi.unit_price) as avg_selling_price
     FROM products.products p
-    JOIN sales.order_items oi ON p.prod_id = oi.prod_id
+    JOIN core.dim_brand b ON p.brand_id = b.brand_id
+    JOIN core.dim_category cat ON b.category_id = cat.category_id
+    JOIN sales.order_items oi ON p.product_id = oi.prod_id
     JOIN sales.orders o ON oi.order_id = o.order_id AND o.order_status = 'Delivered'
-    GROUP BY p.prod_id, p.prod_name, p.category, p.brand, p.price
+    GROUP BY p.product_id, p.product_name, cat.category_name, b.brand_name, p.price, p.cost_price
 ),
 product_reviews AS (
-    SELECT prod_id, COUNT(*) as review_count, ROUND(AVG(rating), 2) as avg_rating
+    SELECT product_id, COUNT(*) as review_count, ROUND(AVG(rating), 2) as avg_rating
     FROM customers.reviews
-    GROUP BY prod_id
+    GROUP BY product_id
 ),
 product_inventory AS (
-    SELECT prod_id, SUM(stock_qty) as total_stock, COUNT(DISTINCT store_id) as stores_stocking
+    SELECT product_id, SUM(quantity_on_hand) as total_stock, COUNT(DISTINCT store_id) as stores_stocking
     FROM products.inventory
-    GROUP BY prod_id
+    GROUP BY product_id
 )
 SELECT 
-    ps.prod_id,
-    ps.prod_name,
+    ps.product_id,
+    ps.product_name,
     ps.category,
     ps.brand,
     ROUND(ps.list_price::NUMERIC, 2) as list_price,
+    ROUND(ps.cost_price::NUMERIC, 2) as cost_price,
     ps.times_ordered,
     ps.total_units_sold,
     ROUND(ps.gross_revenue::NUMERIC, 2) as gross_revenue,
     ROUND(ps.total_discounts::NUMERIC, 2) as total_discounts,
     ROUND(ps.net_revenue::NUMERIC, 2) as net_revenue,
     ROUND(ps.avg_selling_price::NUMERIC, 2) as avg_selling_price,
-    ROUND(ps.avg_discount_pct::NUMERIC, 2) as avg_discount_pct,
+    -- Profit margin (V2: we have cost_price now!)
+    ROUND(((ps.net_revenue - (ps.total_units_sold * ps.cost_price)) / NULLIF(ps.net_revenue, 0) * 100)::NUMERIC, 2) as profit_margin_pct,
     COALESCE(pr.review_count, 0) as review_count,
     COALESCE(pr.avg_rating, 0) as avg_rating,
     COALESCE(pi.total_stock, 0) as current_stock,
     COALESCE(pi.stores_stocking, 0) as stores_stocking,
     RANK() OVER (ORDER BY ps.net_revenue DESC) as revenue_rank,
     RANK() OVER (ORDER BY ps.total_units_sold DESC) as units_rank,
-    RANK() OVER (PARTITION BY ps.category ORDER BY ps.net_revenue DESC) as category_rank,
+    RANK() OVER (PARTITION BY cat.category_name ORDER BY ps.net_revenue DESC) as category_rank,
     ROUND((ps.net_revenue / SUM(ps.net_revenue) OVER () * 100)::NUMERIC, 4) as pct_of_total_revenue
 FROM product_sales ps
-LEFT JOIN product_reviews pr ON ps.prod_id = pr.prod_id
-LEFT JOIN product_inventory pi ON ps.prod_id = pi.prod_id;
+LEFT JOIN product_reviews pr ON ps.product_id = pr.product_id
+LEFT JOIN product_inventory pi ON ps.product_id = pi.product_id;
 
 CREATE INDEX IF NOT EXISTS idx_top_products_category ON analytics.mv_top_products(category);
 CREATE INDEX IF NOT EXISTS idx_top_products_rank ON analytics.mv_top_products(revenue_rank);
+
+COMMENT ON MATERIALIZED VIEW analytics.mv_top_products IS 'Top products with revenue, margins, and ratings — V2 with cost_price';
 
 \echo '      ✓ Materialized view created: mv_top_products'
 
@@ -109,15 +109,17 @@ DROP MATERIALIZED VIEW IF EXISTS analytics.mv_abc_analysis CASCADE;
 CREATE MATERIALIZED VIEW analytics.mv_abc_analysis AS
 WITH product_revenue AS (
     SELECT 
-        p.prod_id,
-        p.prod_name,
-        p.category,
-        p.brand,
-        SUM(oi.quantity * oi.unit_price * (1 - oi.discount / 100)) as net_revenue
+        p.product_id,
+        p.product_name,
+        cat.category_name as category,
+        b.brand_name as brand,
+        SUM(oi.net_amount) as net_revenue
     FROM products.products p
-    JOIN sales.order_items oi ON p.prod_id = oi.prod_id
+    JOIN core.dim_brand b ON p.brand_id = b.brand_id
+    JOIN core.dim_category cat ON b.category_id = cat.category_id
+    JOIN sales.order_items oi ON p.product_id = oi.prod_id
     JOIN sales.orders o ON oi.order_id = o.order_id AND o.order_status = 'Delivered'
-    GROUP BY p.prod_id, p.prod_name, p.category, p.brand
+    GROUP BY p.product_id, p.product_name, cat.category_name, b.brand_name
 ),
 with_cumulative AS (
     SELECT 
@@ -127,10 +129,7 @@ with_cumulative AS (
     FROM product_revenue
 )
 SELECT 
-    prod_id,
-    prod_name,
-    category,
-    brand,
+    product_id, product_name, category, brand,
     ROUND(net_revenue::NUMERIC, 2) as net_revenue,
     ROUND((net_revenue / total_revenue * 100)::NUMERIC, 4) as pct_of_revenue,
     ROUND((cumulative_revenue / total_revenue * 100)::NUMERIC, 2) as cumulative_pct,
@@ -142,6 +141,8 @@ SELECT
     ROW_NUMBER() OVER (ORDER BY net_revenue DESC) as revenue_rank
 FROM with_cumulative
 ORDER BY net_revenue DESC;
+
+COMMENT ON MATERIALIZED VIEW analytics.mv_abc_analysis IS 'ABC/Pareto classification — 80/20 rule analysis';
 
 \echo '      ✓ Materialized view created: mv_abc_analysis'
 
@@ -155,23 +156,26 @@ ORDER BY net_revenue DESC;
 CREATE OR REPLACE VIEW analytics.vw_category_performance AS
 WITH category_stats AS (
     SELECT 
-        p.category,
-        COUNT(DISTINCT p.prod_id) as product_count,
+        cat.category_name as category,
+        COUNT(DISTINCT p.product_id) as product_count,
         COUNT(DISTINCT oi.order_id) as order_count,
         SUM(oi.quantity) as units_sold,
-        SUM(oi.quantity * oi.unit_price * (1 - oi.discount / 100)) as net_revenue,
-        AVG(oi.unit_price) as avg_price,
-        AVG(oi.discount) as avg_discount_pct
+        SUM(oi.net_amount) as net_revenue,
+        AVG(oi.unit_price) as avg_price
     FROM products.products p
-    JOIN sales.order_items oi ON p.prod_id = oi.prod_id
+    JOIN core.dim_brand b ON p.brand_id = b.brand_id
+    JOIN core.dim_category cat ON b.category_id = cat.category_id
+    JOIN sales.order_items oi ON p.product_id = oi.prod_id
     JOIN sales.orders o ON oi.order_id = o.order_id AND o.order_status = 'Delivered'
-    GROUP BY p.category
+    GROUP BY cat.category_name
 ),
 category_reviews AS (
-    SELECT p.category, COUNT(*) as total_reviews, AVG(r.rating) as avg_rating
+    SELECT cat.category_name as category, COUNT(*) as total_reviews, AVG(r.rating) as avg_rating
     FROM customers.reviews r
-    JOIN products.products p ON r.prod_id = p.prod_id
-    GROUP BY p.category
+    JOIN products.products p ON r.product_id = p.product_id
+    JOIN core.dim_brand b ON p.brand_id = b.brand_id
+    JOIN core.dim_category cat ON b.category_id = cat.category_id
+    GROUP BY cat.category_name
 )
 SELECT 
     cs.category,
@@ -180,7 +184,6 @@ SELECT
     cs.units_sold,
     ROUND(cs.net_revenue::NUMERIC, 2) as net_revenue,
     ROUND(cs.avg_price::NUMERIC, 2) as avg_price,
-    ROUND(cs.avg_discount_pct::NUMERIC, 2) as avg_discount_pct,
     COALESCE(cr.total_reviews, 0) as total_reviews,
     ROUND(COALESCE(cr.avg_rating, 0)::NUMERIC, 2) as avg_rating,
     ROUND((cs.net_revenue / SUM(cs.net_revenue) OVER () * 100)::NUMERIC, 2) as market_share_pct,
@@ -188,6 +191,8 @@ SELECT
 FROM category_stats cs
 LEFT JOIN category_reviews cr ON cs.category = cr.category
 ORDER BY net_revenue DESC;
+
+COMMENT ON VIEW analytics.vw_category_performance IS 'Category-level performance metrics';
 
 \echo '      ✓ View created: vw_category_performance'
 
@@ -202,7 +207,7 @@ CREATE OR REPLACE VIEW analytics.vw_brand_performance AS
 SELECT 
     brand,
     category,
-    COUNT(DISTINCT prod_id) as product_count,
+    COUNT(DISTINCT product_id) as product_count,
     SUM(total_units_sold) as total_units_sold,
     ROUND(SUM(net_revenue)::NUMERIC, 2) as net_revenue,
     ROUND(AVG(avg_rating)::NUMERIC, 2) as avg_rating,
@@ -212,6 +217,8 @@ SELECT
 FROM analytics.mv_top_products
 GROUP BY brand, category
 ORDER BY net_revenue DESC;
+
+COMMENT ON VIEW analytics.vw_brand_performance IS 'Brand-level performance within categories';
 
 \echo '      ✓ View created: vw_brand_performance'
 
@@ -225,24 +232,28 @@ ORDER BY net_revenue DESC;
 CREATE OR REPLACE VIEW analytics.vw_inventory_turnover AS
 WITH product_velocity AS (
     SELECT 
-        p.prod_id,
-        p.prod_name,
-        p.category,
-        i.stock_qty as current_stock,
+        p.product_id,
+        p.product_name,
+        cat.category_name as category,
+        i.quantity_on_hand as current_stock,
+        i.reorder_level,
         COALESCE(SUM(oi.quantity), 0) as units_sold_30d
     FROM products.products p
-    LEFT JOIN products.inventory i ON p.prod_id = i.prod_id
-    LEFT JOIN sales.order_items oi ON p.prod_id = oi.prod_id
+    JOIN core.dim_brand b ON p.brand_id = b.brand_id
+    JOIN core.dim_category cat ON b.category_id = cat.category_id
+    LEFT JOIN products.inventory i ON p.product_id = i.product_id
+    LEFT JOIN sales.order_items oi ON p.product_id = oi.prod_id
     LEFT JOIN sales.orders o ON oi.order_id = o.order_id 
         AND o.order_status = 'Delivered'
         AND o.order_date >= (SELECT MAX(order_date) - INTERVAL '30 days' FROM sales.orders)
-    GROUP BY p.prod_id, p.prod_name, p.category, i.stock_qty
+    GROUP BY p.product_id, p.product_name, cat.category_name, i.quantity_on_hand, i.reorder_level
 )
 SELECT 
-    prod_id,
-    prod_name,
+    product_id,
+    product_name,
     category,
     COALESCE(current_stock, 0) as current_stock,
+    COALESCE(reorder_level, 0) as reorder_level,
     units_sold_30d,
     ROUND(units_sold_30d / 30.0, 2) as daily_velocity,
     CASE 
@@ -252,12 +263,14 @@ SELECT
     CASE 
         WHEN COALESCE(current_stock, 0) = 0 THEN 'Out of Stock'
         WHEN units_sold_30d = 0 THEN 'Dead Stock'
-        WHEN COALESCE(current_stock, 0) / NULLIF(units_sold_30d / 30.0, 0) < 7 THEN 'Low Stock'
+        WHEN COALESCE(current_stock, 0) <= COALESCE(reorder_level, 10) THEN 'Low Stock'
         WHEN COALESCE(current_stock, 0) / NULLIF(units_sold_30d / 30.0, 0) > 90 THEN 'Overstocked'
         ELSE 'Normal'
     END as stock_status
 FROM product_velocity
 ORDER BY days_of_inventory;
+
+COMMENT ON VIEW analytics.vw_inventory_turnover IS 'Inventory velocity and stock health — V2 with reorder_level';
 
 \echo '      ✓ View created: vw_inventory_turnover'
 
@@ -273,15 +286,13 @@ CREATE OR REPLACE FUNCTION analytics.get_top_products_json()
 RETURNS JSON AS $$
 BEGIN
     RETURN (
-        SELECT json_agg(
-            json_build_object(
-                'prodId', prod_id, 'productName', prod_name, 'category', category, 'brand', brand,
-                'revenue', net_revenue, 'unitsSold', total_units_sold, 'avgRating', avg_rating,
-                'currentStock', current_stock, 'revenueRank', revenue_rank, 'categoryRank', category_rank
-            ) ORDER BY revenue_rank
-        )
-        FROM analytics.mv_top_products
-        LIMIT 20
+        SELECT json_agg(json_build_object(
+            'productId', product_id, 'productName', product_name, 'category', category, 'brand', brand,
+            'revenue', net_revenue, 'unitsSold', total_units_sold, 'avgRating', avg_rating,
+            'profitMargin', profit_margin_pct, 'currentStock', current_stock,
+            'revenueRank', revenue_rank, 'categoryRank', category_rank
+        ) ORDER BY revenue_rank)
+        FROM analytics.mv_top_products LIMIT 20
     );
 END;
 $$ LANGUAGE plpgsql STABLE;
@@ -290,13 +301,11 @@ CREATE OR REPLACE FUNCTION analytics.get_category_performance_json()
 RETURNS JSON AS $$
 BEGIN
     RETURN (
-        SELECT json_agg(
-            json_build_object(
-                'category', category, 'productCount', product_count, 'revenue', net_revenue,
-                'unitsSold', units_sold, 'avgPrice', avg_price, 'avgRating', avg_rating,
-                'marketShare', market_share_pct, 'rank', revenue_rank
-            ) ORDER BY revenue_rank
-        )
+        SELECT json_agg(json_build_object(
+            'category', category, 'productCount', product_count, 'revenue', net_revenue,
+            'unitsSold', units_sold, 'avgPrice', avg_price, 'avgRating', avg_rating,
+            'marketShare', market_share_pct, 'rank', revenue_rank
+        ) ORDER BY revenue_rank)
         FROM analytics.vw_category_performance
     );
 END;
@@ -306,15 +315,12 @@ CREATE OR REPLACE FUNCTION analytics.get_brand_performance_json()
 RETURNS JSON AS $$
 BEGIN
     RETURN (
-        SELECT json_agg(
-            json_build_object(
-                'brand', brand, 'category', category, 'productCount', product_count,
-                'revenue', net_revenue, 'unitsSold', total_units_sold, 'avgRating', avg_rating,
-                'categoryMarketShare', category_market_share_pct, 'categoryRank', category_rank
-            ) ORDER BY net_revenue DESC
-        )
-        FROM analytics.vw_brand_performance
-        LIMIT 20
+        SELECT json_agg(json_build_object(
+            'brand', brand, 'category', category, 'productCount', product_count,
+            'revenue', net_revenue, 'unitsSold', total_units_sold, 'avgRating', avg_rating,
+            'categoryMarketShare', category_market_share_pct, 'categoryRank', category_rank
+        ) ORDER BY net_revenue DESC)
+        FROM analytics.vw_brand_performance LIMIT 20
     );
 END;
 $$ LANGUAGE plpgsql STABLE;
@@ -332,12 +338,11 @@ BEGIN
                     SELECT abc_classification, COUNT(*) as cnt, 
                            ROUND(SUM(net_revenue)::NUMERIC, 2) as revenue,
                            ROUND((SUM(net_revenue) / SUM(SUM(net_revenue)) OVER () * 100)::NUMERIC, 2) as pct
-                    FROM analytics.mv_abc_analysis
-                    GROUP BY abc_classification
+                    FROM analytics.mv_abc_analysis GROUP BY abc_classification
                 ) s
             ),
             'topAProducts', (
-                SELECT json_agg(json_build_object('productName', prod_name, 'revenue', net_revenue, 'pct', pct_of_revenue))
+                SELECT json_agg(json_build_object('productName', product_name, 'revenue', net_revenue, 'pct', pct_of_revenue))
                 FROM analytics.mv_abc_analysis WHERE abc_classification = 'A' LIMIT 20
             )
         )
@@ -349,14 +354,11 @@ CREATE OR REPLACE FUNCTION analytics.get_inventory_status_json()
 RETURNS JSON AS $$
 BEGIN
     RETURN (
-        SELECT json_agg(json_build_object(
-            'status', stock_status, 'productCount', cnt, 'pctOfProducts', pct
-        ))
+        SELECT json_agg(json_build_object('status', stock_status, 'productCount', cnt, 'pctOfProducts', pct))
         FROM (
             SELECT stock_status, COUNT(*) as cnt,
                    ROUND((COUNT(*)::NUMERIC / SUM(COUNT(*)) OVER () * 100), 2) as pct
-            FROM analytics.vw_inventory_turnover
-            GROUP BY stock_status
+            FROM analytics.vw_inventory_turnover GROUP BY stock_status
         ) s
     );
 END;
@@ -364,13 +366,18 @@ $$ LANGUAGE plpgsql STABLE;
 
 \echo '      ✓ JSON functions created (5 functions)'
 
-
--- Refresh MVs
 REFRESH MATERIALIZED VIEW analytics.mv_top_products;
 REFRESH MATERIALIZED VIEW analytics.mv_abc_analysis;
 
 \echo ''
 \echo '============================================================================'
-\echo '              PRODUCT ANALYTICS MODULE - COMPLETE                           '
+\echo '          PRODUCT ANALYTICS MODULE (V2) — COMPLETE                          '
+\echo '============================================================================'
+\echo ''
+\echo '✅ Views: vw_category_performance, vw_brand_performance, vw_inventory_turnover'
+\echo '✅ MVs: mv_top_products, mv_abc_analysis'
+\echo '✅ JSON: 5 export functions'
+\echo ''
+\echo '➡️  Next: Run 04_store_analytics.sql'
 \echo '============================================================================'
 \echo ''
