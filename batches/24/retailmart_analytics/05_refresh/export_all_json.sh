@@ -12,10 +12,11 @@
 #   ./export_all_json.sh [output_directory]
 #   ./export_all_json.sh --refresh [output_directory]
 #
-# V2 CHANGES:
-#   - Added exports for: finance, hr, payroll, audit, supply chain, manufacturing
-#   - Added exports for: loyalty, support, call center, web events
-#   - Total: 17 JSON exports (up from 12)
+#   To avoid password prompts, either:
+#   1. Set PGPASSWORD: export PGPASSWORD=yourpassword && ./export_all_json.sh
+#   2. Create ~/.pgpass file: localhost:5432:*:postgres:yourpassword
+#      Then: chmod 600 ~/.pgpass
+#   3. Use peer/trust auth in pg_hba.conf (local dev only)
 # ============================================================================
 
 set -e
@@ -27,6 +28,14 @@ OUTPUT_DIR="${2:-${1:-./06_dashboard/data}}"
 LOG_DIR="./05_refresh/logs"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 LOG_FILE="$LOG_DIR/export_log_${TIMESTAMP}.txt"
+
+# Prompt for password ONCE if not already set
+if [ -z "$PGPASSWORD" ]; then
+    echo -n "Enter PostgreSQL password for user '$DB_USER': "
+    read -s PGPASSWORD
+    echo ""
+    export PGPASSWORD
+fi
 
 # Handle --refresh flag
 REFRESH_FIRST=false
@@ -46,6 +55,14 @@ echo "  Output: $OUTPUT_DIR" | tee -a "$LOG_FILE"
 echo "  Started: $(date)" | tee -a "$LOG_FILE"
 echo "============================================================================" | tee -a "$LOG_FILE"
 
+# Test connection first
+if ! psql -d "$DB_NAME" -U "$DB_USER" -c "SELECT 1;" > /dev/null 2>&1; then
+    echo "❌ Cannot connect to database '$DB_NAME' as user '$DB_USER'"
+    echo "   Check your credentials and try again."
+    exit 1
+fi
+echo "  ✓ Database connection verified" | tee -a "$LOG_FILE"
+
 # Refresh if requested
 if [ "$REFRESH_FIRST" = true ]; then
     echo "" | tee -a "$LOG_FILE"
@@ -62,14 +79,14 @@ echo "" | tee -a "$LOG_FILE"
 export_json() {
     local func_name=$1
     local file_name=$2
-    local start_time=$(date +%s%N)
-    
+    local start_time=$(date +%s%N 2>/dev/null || date +%s)
+
     psql -d "$DB_NAME" -U "$DB_USER" -t -A -c "SELECT $func_name();" > "$OUTPUT_DIR/$file_name" 2>/dev/null
-    
-    local end_time=$(date +%s%N)
+
+    local end_time=$(date +%s%N 2>/dev/null || date +%s)
     local duration=$(( (end_time - start_time) / 1000000 ))
     local size=$(wc -c < "$OUTPUT_DIR/$file_name" 2>/dev/null || echo "0")
-    
+
     if [ -s "$OUTPUT_DIR/$file_name" ]; then
         echo "  ✓ $file_name (${size} bytes, ${duration}ms)" | tee -a "$LOG_FILE"
     else
@@ -153,6 +170,9 @@ export_json "analytics.get_manufacturing_json" "manufacturing.json"
 # ── Alerts ──
 echo "[Bonus] Alerts..." | tee -a "$LOG_FILE"
 export_json "analytics.get_all_alerts_json" "alerts.json"
+
+# Clean up password from environment
+unset PGPASSWORD
 
 echo "" | tee -a "$LOG_FILE"
 echo "============================================================================" | tee -a "$LOG_FILE"
