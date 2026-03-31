@@ -1,5 +1,0 @@
-tier_id,tier_name,min_points,max_points,benefits
-1,Bronze,0.0,999.0,Free Shipping > $50
-2,Silver,1000.0,4999.0,"5% Discount, Free Shipping"
-3,Gold,5000.0,9999.0,"10% DISCOUNT, PRIORITY SUPPORT"
-4,platinum,10000.0,999999.0,"15% Discount, Concierge"
