@@ -57,7 +57,7 @@ dist/
 docs/
 _datasets/
 **/logs
-
+.claude
 
 # =====================================
 # End of .gitignore - maintained by Siraj
